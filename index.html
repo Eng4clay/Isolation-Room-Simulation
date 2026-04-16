@@ -1,426 +1,772 @@
 <!DOCTYPE html>
-<html lang="ar" dir="ltr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AII Room - Pro Simulation</title>
-    <style>
-        :root {
-            --primary: #00d2ff;
-            --danger: #ff4b4b;
-            --warning: #ffcc00;
-            --success: #00e676;
-            --bg-glass: rgba(10, 15, 25, 0.7);
-        }
-        body { 
-            margin: 0; overflow: hidden; 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background-color: #050505; 
-            color: #fff;
-        }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
-        
-        /* Modern UI Overlay */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        
-        /* High-End Dashboard */
-        .dashboard { 
-            position: absolute; top: 30px; right: 30px; 
-            background: var(--bg-glass); 
-            border: 1px solid rgba(0, 210, 255, 0.3); 
-            padding: 25px; border-radius: 16px; width: 340px; 
-            pointer-events: auto; backdrop-filter: blur(12px); 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(0, 210, 255, 0.1); 
-        }
-        .dashboard h2 { 
-            margin: 0 0 20px 0; font-size: 18px; color: var(--primary); 
-            text-transform: uppercase; letter-spacing: 2px; 
-            border-bottom: 2px solid rgba(0, 210, 255, 0.2); padding-bottom: 10px; 
-        }
-        .data-row { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 12px; font-size: 14px; letter-spacing: 0.5px;
-        }
-        .data-row span:last-child { font-family: monospace; font-size: 15px; font-weight: 600; }
-        
-        .val-neutral { color: var(--success); text-shadow: 0 0 8px rgba(0, 230, 118, 0.4); }
-        .val-warning { color: var(--warning); text-shadow: 0 0 8px rgba(255, 204, 0, 0.4); }
-        .val-danger { color: var(--danger); text-shadow: 0 0 8px rgba(255, 75, 75, 0.4); }
-        
-        /* Premium Controls */
-        .controls { 
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); 
-            display: flex; gap: 20px; pointer-events: auto; 
-        }
-        button { 
-            background: rgba(0, 210, 255, 0.1); border: 1px solid var(--primary); 
-            color: var(--primary); padding: 14px 28px; font-size: 13px; 
-            border-radius: 8px; cursor: pointer; transition: all 0.3s ease; 
-            font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; 
-            backdrop-filter: blur(5px);
-        }
-        button:hover { 
-            background: var(--primary); color: #000; 
-            box-shadow: 0 0 20px rgba(0, 210, 255, 0.5); 
-        }
-        button.btn-danger { border-color: var(--danger); color: var(--danger); background: rgba(255, 75, 75, 0.1); }
-        button.btn-danger:hover { background: var(--danger); color: #fff; box-shadow: 0 0 20px rgba(255, 75, 75, 0.5); }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AII Room Suite — Negative Pressure Isolation Simulation</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#0a0d12;font-family:'Courier New',monospace;overflow:hidden;color:#c8e6ff;}
+  #canvas-container{position:fixed;inset:0;}
+  canvas{display:block;width:100%!important;height:100%!important;}
 
-        /* Cinematic Warning Banner */
-        #warning-banner { 
-            position: absolute; top: 30px; left: 50%; transform: translateX(-50%); 
-            background: rgba(255, 0, 0, 0.8); color: white; padding: 15px 40px; 
-            font-size: 16px; font-weight: bold; border-radius: 8px; display: none; 
-            box-shadow: 0 0 30px rgba(255,0,0,0.6); border: 1px solid #ff4b4b; 
-            pointer-events: auto; backdrop-filter: blur(10px); letter-spacing: 2px;
-            text-transform: uppercase; animation: pulse 1.5s infinite;
-        }
+  /* HUD */
+  #hud{position:fixed;top:14px;right:14px;width:230px;background:rgba(8,18,32,0.92);border:1px solid #1c4a7a;border-radius:6px;padding:12px;font-size:11px;z-index:100;backdrop-filter:blur(6px);}
+  #hud h3{color:#00FFAA;font-size:12px;letter-spacing:2px;margin-bottom:10px;border-bottom:1px solid #1c4a7a;padding-bottom:6px;}
+  .hud-row{display:flex;justify-content:space-between;align-items:center;margin:5px 0;}
+  .hud-label{color:#7ab0d4;}
+  .hud-val{color:#e8f4ff;font-weight:bold;}
+  .hud-val.green{color:#00FFAA;}
+  .hud-val.amber{color:#FFAA00;}
+  .hud-val.red{color:#ff4444;}
+  .hud-divider{border:none;border-top:1px solid #1a3550;margin:6px 0;}
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 20px rgba(255,0,0,0.4); }
-            50% { box-shadow: 0 0 40px rgba(255,0,0,0.8); }
-            100% { box-shadow: 0 0 20px rgba(255,0,0,0.4); }
-        }
+  /* Pressure Gauges */
+  #gauges{position:fixed;bottom:14px;right:14px;display:flex;gap:10px;z-index:100;}
+  .gauge{background:rgba(8,18,32,0.9);border-radius:6px;padding:10px 14px;text-align:center;border:1px solid #1c4a7a;min-width:90px;}
+  .gauge-title{font-size:9px;letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;}
+  .gauge-val{font-size:17px;font-weight:bold;font-family:'Courier New',monospace;}
+  .gauge-unit{font-size:8px;color:#7ab0d4;margin-top:1px;}
+  .gauge.corridor .gauge-val{color:#00cc55;}
+  .gauge.anteroom .gauge-val{color:#FFAA00;}
+  .gauge.isolation .gauge-val{color:#ff3333;}
 
-        /* 3D Holographic Labels */
-        .floating-label { 
-            position: absolute; background: rgba(0, 20, 40, 0.8); 
-            border: 1px solid rgba(0, 210, 255, 0.4); color: #fff; 
-            padding: 6px 12px; font-size: 11px; border-radius: 6px; 
-            pointer-events: none; transform: translate(-50%, -50%); 
-            transition: opacity 0.3s; white-space: nowrap; 
-            backdrop-filter: blur(4px); letter-spacing: 1px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        .floating-label::after {
-            content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
-            border-width: 5px 5px 0; border-style: solid; 
-            border-color: rgba(0, 210, 255, 0.4) transparent transparent transparent;
-        }
-    </style>
+  /* Controls */
+  #controls{position:fixed;top:14px;left:14px;display:flex;flex-direction:column;gap:8px;z-index:100;}
+  .btn{padding:8px 14px;border:1px solid #1c7a60;background:rgba(0,20,35,0.85);color:#00FFAA;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1px;border-radius:4px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(4px);}
+  .btn:hover{background:rgba(0,255,170,0.12);border-color:#00FFAA;}
+  .btn.danger{border-color:#7a1c1c;color:#ff6666;}
+  .btn.danger:hover{background:rgba(255,50,50,0.15);border-color:#ff4444;}
+  .btn.active{background:rgba(255,50,50,0.2);border-color:#ff4444;color:#ff4444;}
+
+  /* Warning Banner */
+  #warning{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(180,0,0,0.92);border:2px solid #ff2222;border-radius:8px;padding:18px 30px;text-align:center;z-index:200;backdrop-filter:blur(8px);animation:pulse 1s infinite;}
+  #warning h2{color:#fff;font-size:18px;letter-spacing:2px;margin-bottom:6px;}
+  #warning p{color:#ffcccc;font-size:12px;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 20px rgba(255,0,0,0.5);}50%{box-shadow:0 0 40px rgba(255,0,0,0.9);}}
+
+  /* Labels (CSS2D) */
+  .label{color:#c8e6ff;font-family:'Courier New',monospace;font-size:10px;background:rgba(5,15,30,0.8);padding:3px 7px;border:1px solid #1c4a7a;border-radius:3px;pointer-events:none;white-space:nowrap;letter-spacing:0.5px;}
+  .label.green{border-color:#00FFAA;color:#00FFAA;}
+  .label.amber{border-color:#FFAA00;color:#FFAA00;}
+  .label.red{border-color:#ff4444;color:#ff4444;}
+  .label.arrow{font-size:9px;color:#7ab0d4;}
+
+  #legend{position:fixed;bottom:14px;left:14px;background:rgba(8,18,32,0.9);border:1px solid #1c4a7a;border-radius:6px;padding:10px 14px;font-size:10px;z-index:100;}
+  #legend h4{color:#7ab0d4;margin-bottom:6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;}
+  .leg-row{display:flex;align-items:center;gap:8px;margin:3px 0;}
+  .leg-dot{width:10px;height:10px;border-radius:50%;}
+  #view-label{position:fixed;bottom:55px;left:50%;transform:translateX(-50%);background:rgba(8,18,32,0.8);border:1px solid #1c4a7a;border-radius:4px;padding:4px 14px;font-size:10px;color:#7ab0d4;z-index:100;letter-spacing:1px;}
+</style>
 </head>
 <body>
+<div id="canvas-container"><canvas id="c"></canvas></div>
 
-    <div id="canvas-container"></div>
+<!-- HUD -->
+<div id="hud">
+  <h3>▶ VENTILATION HUD</h3>
+  <div class="hud-row"><span class="hud-label">Room Volume</span><span class="hud-val">48 m³</span></div>
+  <div class="hud-row"><span class="hud-label">Target ACH</span><span class="hud-val green">12 ACH</span></div>
+  <hr class="hud-divider"/>
+  <div class="hud-row"><span class="hud-label">Supply (SA)</span><span class="hud-val green" id="h-supply">340 CFM</span></div>
+  <div class="hud-row"><span class="hud-label">Isolation EG</span><span class="hud-val amber" id="h-iseg">440 CFM</span></div>
+  <div class="hud-row"><span class="hud-label">Bathroom EG</span><span class="hud-val amber" id="h-batheg">50 CFM</span></div>
+  <div class="hud-row"><span class="hud-label">Total Exhaust</span><span class="hud-val red" id="h-total">490 CFM</span></div>
+  <hr class="hud-divider"/>
+  <div class="hud-row"><span class="hud-label">Offset (−)</span><span class="hud-val red">150 CFM</span></div>
+  <div class="hud-row"><span class="hud-label">HEPA Efficiency</span><span class="hud-val green">99.97%</span></div>
+  <hr class="hud-divider"/>
+  <div class="hud-row"><span class="hud-label">Status</span><span class="hud-val green" id="h-status">● COMPLIANT</span></div>
+</div>
 
-    <div id="ui-layer">
-        <div id="warning-banner">⚠️ Warning: Negative Pressure Compromised</div>
-        
-        <div class="dashboard">
-            <h2>System Telemetry</h2>
-            <div class="data-row"><span>Room Status:</span> <span id="status-val" class="val-neutral">SEALED (12 ACH)</span></div>
-            <div class="data-row"><span>Corridor Pressure:</span> <span style="color: #aaa;">0.00" WC</span></div>
-            <div class="data-row"><span>Anteroom Pressure:</span> <span id="ante-press" class="val-warning">-0.01" WC</span></div>
-            <div class="data-row"><span>Isolation Pressure:</span> <span id="iso-press" class="val-danger">-0.03" WC</span></div>
-            <hr style="border: 0; border-top: 1px solid rgba(0, 210, 255, 0.2); margin: 15px 0;">
-            <div class="data-row"><span>Supply Air (Ceiling):</span> <span>340 CFM</span></div>
-            <div class="data-row"><span>Main Extract (Wall):</span> <span>440 CFM</span></div>
-            <div class="data-row"><span>Bathroom Exhaust:</span> <span>50 CFM</span></div>
-            <div class="data-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1);">
-                <span style="color: var(--primary);">Total Exhaust (HEPA):</span> 
-                <span style="color: var(--primary);">490 CFM</span>
-            </div>
-        </div>
+<!-- Pressure Gauges -->
+<div id="gauges">
+  <div class="gauge corridor">
+    <div class="gauge-title" style="color:#00cc55;">Corridor</div>
+    <div class="gauge-val" id="g-corridor">0.00</div>
+    <div class="gauge-unit">" WC</div>
+  </div>
+  <div class="gauge anteroom">
+    <div class="gauge-title" style="color:#FFAA00;">Anteroom</div>
+    <div class="gauge-val" id="g-anteroom">-0.01</div>
+    <div class="gauge-unit">" WC</div>
+  </div>
+  <div class="gauge isolation">
+    <div class="gauge-title" style="color:#ff3333;">Isolation</div>
+    <div class="gauge-val" id="g-isolation">-0.03</div>
+    <div class="gauge-unit">" WC</div>
+  </div>
+</div>
 
-        <div class="controls">
-            <button id="btn-camera">Switch to Plan View</button>
-            <button id="btn-door" class="btn-danger">Open Isolation Door</button>
-        </div>
+<!-- Controls -->
+<div id="controls">
+  <button class="btn" id="btn-view">⟳ Toggle View (Iso/Plan)</button>
+  <button class="btn danger" id="btn-door">⚠ Open Door (Emergency)</button>
+  <button class="btn" id="btn-labels">◈ Toggle Labels</button>
+  <button class="btn" id="btn-particles">◉ Toggle Particles</button>
+</div>
 
-        <div id="label-corridor" class="floating-label">Normal Pressure Corridor</div>
-        <div id="label-anteroom" class="floating-label">Buffer Anteroom</div>
-        <div id="label-iso" class="floating-label">Negative Pressure Iso</div>
-        <div id="label-bath" class="floating-label">Bathroom Exhaust</div>
-        <div id="label-hepa" class="floating-label">HEPA Filtration Unit</div>
-    </div>
+<!-- Warning -->
+<div id="warning">
+  <h2>⚠ NEGATIVE PRESSURE LOST</h2>
+  <p>BIOHAZARD — DO NOT ENTER</p>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+<!-- Legend -->
+<div id="legend">
+  <h4>Airflow Legend</h4>
+  <div class="leg-row"><div class="leg-dot" style="background:#00FFAA;"></div><span>Supply Air (Clean)</span></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#FFAA00;"></div><span>Contaminated Extract</span></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#ffffff;"></div><span>Make-Up / Undercut Air</span></div>
+</div>
 
-    <script>
-        // --- 1. CORE SETUP ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.015); // Add depth
+<div id="view-label">ISOMETRIC 3D VIEW</div>
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(22, 28, 22);
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Sharpness
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinematic colors
-        renderer.toneMappingExposure = 1.2;
-        container.appendChild(renderer.domElement);
+<script>
+'use strict';
+// ─── SCENE SETUP ─────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x0a0d12);
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.target.set(-2, 2, 0);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.maxPolarAngle = Math.PI / 2.2;
+const labelRenderer = new THREE.CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.position = 'fixed';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+labelRenderer.domElement.style.zIndex = '50';
+document.body.appendChild(labelRenderer.domElement);
 
-        // --- 2. ADVANCED LIGHTING ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(ambientLight);
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0a0d12, 0.018);
 
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.4);
-        hemiLight.position.set(0, 20, 0);
-        scene.add(hemiLight);
+// ─── CAMERAS ─────────────────────────────────────────────────────
+const perspCam = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 200);
+perspCam.position.set(14, 11, 14);
+perspCam.lookAt(0, 0, 0);
 
-        // Main Room Lights
-        function createRoomLight(x, y, z, color, intensity) {
-            const light = new THREE.PointLight(color, intensity, 20);
-            light.position.set(x, y, z);
-            light.castShadow = true;
-            light.shadow.bias = -0.001;
-            scene.add(light);
-            return light;
-        }
-        createRoomLight(-6, 4.8, 0, 0xe6f2ff, 1.5); // Iso Room
-        createRoomLight(0.5, 4.8, 0, 0xffffff, 1);  // Anteroom
-        createRoomLight(9, 4.8, 0, 0xffffff, 0.8);  // Corridor
+const orthoSize = 9;
+const orthoRatio = innerWidth/innerHeight;
+const orthoCam = new THREE.OrthographicCamera(
+  -orthoSize*orthoRatio, orthoSize*orthoRatio,
+  orthoSize, -orthoSize, 0.1, 200
+);
+orthoCam.position.set(0, 30, 0);
+orthoCam.lookAt(0, 0, 0);
 
-        // --- 3. HIGH-END MATERIALS ---
-        // Glass walls (Architectural look)
-        const wallMat = new THREE.MeshPhysicalMaterial({ 
-            color: 0x88bbdd, transmission: 0.9, opacity: 1, transparent: true,
-            roughness: 0.2, metalness: 0.1, ior: 1.5, thickness: 0.5,
-            side: THREE.DoubleSide
-        });
-        
-        // Floor with slight reflection
-        const floorMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1a202c, roughness: 0.4, metalness: 0.1 
-        });
+let activeCamera = perspCam;
+let isOrtho = false;
 
-        // --- 4. ARCHITECTURE ---
-        const archGroup = new THREE.Group();
-        scene.add(archGroup);
+const controls = new THREE.OrbitControls(perspCam, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.target.set(0, 1.5, 0);
+controls.minDistance = 5;
+controls.maxDistance = 40;
 
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(32, 0.2, 18), floorMat);
-        floor.position.y = -0.1;
-        floor.receiveShadow = true;
-        archGroup.add(floor);
+// ─── LIGHTING ────────────────────────────────────────────────────
+const ambient = new THREE.AmbientLight(0xc8e6ff, 0.45);
+scene.add(ambient);
 
-        function createWall(w, h, d, x, y, z) {
-            const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
-            wall.position.set(x, y, z);
-            wall.castShadow = true;
-            wall.receiveShadow = true;
-            archGroup.add(wall);
-            return wall;
-        }
+const sun = new THREE.DirectionalLight(0xe8f4ff, 0.9);
+sun.position.set(10, 15, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.near = 0.1;
+sun.shadow.camera.far = 60;
+sun.shadow.camera.left = -15;
+sun.shadow.camera.right = 15;
+sun.shadow.camera.top = 15;
+sun.shadow.camera.bottom = -15;
+scene.add(sun);
 
-        // Walls
-        createWall(30, 5, 0.2, 0, 2.5, -6); // Back
-        createWall(30, 5, 0.2, 0, 2.5, 6);  // Front
-        createWall(0.2, 5, 12, -15, 2.5, 0); // Far Left
-        createWall(0.2, 5, 12, 15, 2.5, 0); // Far Right
-        createWall(0.2, 5, 5, 3, 2.5, -3.5); // Corridor to Anteroom (Top)
-        createWall(0.2, 5, 5, 3, 2.5, 3.5);  // Corridor to Anteroom (Bottom)
-        createWall(0.2, 5, 5, -2, 2.5, -3.5); // Anteroom to Iso (Top)
-        createWall(0.2, 5, 5, -2, 2.5, 3.5);  // Anteroom to Iso (Bottom)
+const fill = new THREE.DirectionalLight(0x4488cc, 0.3);
+fill.position.set(-8, 5, -5);
+scene.add(fill);
 
-        // Bathroom
-        createWall(4, 5, 0.2, -13, 2.5, -2);
-        createWall(0.2, 5, 4, -11, 2.5, -4);
+// ─── GEOMETRY HELPERS ────────────────────────────────────────────
+function box(w,h,d,mat,rx,ry,rz){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  if(rx)m.rotation.x=rx; if(ry)m.rotation.y=ry; if(rz)m.rotation.z=rz;
+  m.castShadow=true; m.receiveShadow=true;
+  return m;
+}
 
-        // Patient Bed (Simple abstraction)
-        const bedBase = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 4), new THREE.MeshStandardMaterial({color: 0xdddddd}));
-        bedBase.position.set(-8, 0.4, 3);
-        bedBase.castShadow = true;
-        archGroup.add(bedBase);
-        const bedMattress = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.3, 3.8), new THREE.MeshStandardMaterial({color: 0x00d2ff}));
-        bedMattress.position.set(-8, 0.95, 3);
-        archGroup.add(bedMattress);
+// ─── MATERIALS ───────────────────────────────────────────────────
+const wallMat = new THREE.MeshPhongMaterial({color:0x9ab8d4,transparent:true,opacity:0.22,side:THREE.DoubleSide,depthWrite:false});
+const wallMatSolid = new THREE.MeshPhongMaterial({color:0x7aa0bc,side:THREE.DoubleSide});
+const floorMat = new THREE.MeshStandardMaterial({color:0x1a2535,roughness:0.8,metalness:0.1});
+const ceilMat = new THREE.MeshStandardMaterial({color:0x1e2e42,roughness:0.6});
+const doorFrameMat = new THREE.MeshStandardMaterial({color:0x2a3f55,roughness:0.5,metalness:0.3});
+const doorMat = new THREE.MeshStandardMaterial({color:0x3a5a72,roughness:0.4,metalness:0.2});
+const glassMat = new THREE.MeshPhongMaterial({color:0x88ccff,transparent:true,opacity:0.35,side:THREE.DoubleSide});
+const metalMat = new THREE.MeshStandardMaterial({color:0x6a8898,roughness:0.3,metalness:0.8});
+const hepaColor = new THREE.MeshStandardMaterial({color:0xb0c8d8,roughness:0.2,metalness:0.9});
+const grilleColor = new THREE.MeshStandardMaterial({color:0x556677,roughness:0.4,metalness:0.6});
+const bedMat = new THREE.MeshStandardMaterial({color:0xd4e8f5,roughness:0.7});
+const bedFrameMat = new THREE.MeshStandardMaterial({color:0x778899,roughness:0.3,metalness:0.5});
+const ledMat = new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xe8f4ff,emissiveIntensity:1.0,roughness:0.9});
 
-        // --- 5. DOORS & GASKETS ---
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.5, roughness: 0.3 });
-        const windowMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.95, opacity: 1, transparent: true, roughness: 0.1 });
+// ─── ROOM LAYOUT CONSTANTS ───────────────────────────────────────
+// Layout (X axis): Isolation(-3 to 1), Anteroom(1 to 3), Corridor(3 to 5)
+// Z axis: -2 to 2 (4m wide), Y axis: 0 to 3
+const ISO_W=4, ISO_D=4, ISO_H=3;
+const ANT_W=2, ANT_D=4, ANT_H=3;
+const COR_W=2.5, COR_D=4, COR_H=3;
+const BATH_W=1.6, BATH_D=1.6;
 
-        function createDoor(x, y, z, rotGroupX, rotGroupZ) {
-            const pivot = new THREE.Group();
-            pivot.position.set(rotGroupX, y, rotGroupZ);
-            const door = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3.8, 2), doorMat);
-            door.position.set(0, 2.1, 1); // Undercut gap
-            door.castShadow = true;
-            
-            // Vision Panel
-            const panel = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 0.8), windowMat);
-            panel.position.set(0, 2.5, 1);
-            door.add(panel);
-            
-            pivot.add(door);
-            archGroup.add(pivot);
-            return pivot;
-        }
+// X positions
+const ISO_X = -3;   // isolation left edge
+const ANT_X =  1;   // anteroom left edge
+const COR_X =  3;   // corridor left edge
 
-        const doorAnteroom = createDoor(3, 0, -1, 3, -1);
-        const doorIso = createDoor(-2, 0, -1, -2, -1);
+const ISO_CX = ISO_X + ISO_W/2;  // -1
+const ANT_CX = ANT_X + ANT_W/2;  //  2
+const COR_CX = COR_X + COR_W/2;  //  4.25
 
-        // Equipment
-        const hepaMat = new THREE.MeshStandardMaterial({ color: 0x112233, metalness: 0.8 });
-        const hepaFilter = new THREE.Mesh(new THREE.BoxGeometry(2, 1.5, 1.5), hepaMat);
-        hepaFilter.position.set(-15, 4, -4.5);
-        archGroup.add(hepaFilter);
+const ROOT_Z = -2; // back wall z
+const ROOM_Z_CX = 0; // center z
 
-        // --- 6. ADVANCED AIRFLOW PARTICLES (BEZIER CURVES) ---
-        const particles = [];
-        const particleGeo = new THREE.SphereGeometry(0.06, 8, 8);
-        
-        // Emissive materials for holographic look
-        const matSupply = new THREE.MeshStandardMaterial({ color: 0x00d2ff, emissive: 0x00d2ff, emissiveIntensity: 2 });
-        const matExtract = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xffcc00, emissiveIntensity: 2 });
-        const matNeutral = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1 });
+const ALL = new THREE.Group();
+scene.add(ALL);
 
-        // Define Flow Paths (Start, ControlPoint1, ControlPoint2, End)
-        const paths = [
-            // Supply -> Bed -> Extract
-            { type: 'supply', points: [new THREE.Vector3(-6, 4.5, 0), new THREE.Vector3(-6, 2, 0), new THREE.Vector3(-8, 2, 2), new THREE.Vector3(-14, 2, -4)] },
-            // Under Door Corridor -> Anteroom
-            { type: 'flow', points: [new THREE.Vector3(4, 0.1, 0), new THREE.Vector3(3, 0.1, 0), new THREE.Vector3(2, 0.1, 0), new THREE.Vector3(1, 1, 0)] },
-            // Under Door Anteroom -> Iso
-            { type: 'flow', points: [new THREE.Vector3(0, 0.1, 0), new THREE.Vector3(-1, 0.1, 0), new THREE.Vector3(-2, 0.1, 0), new THREE.Vector3(-4, 2, 0)] },
-            // Bath Extract
-            { type: 'extract', points: [new THREE.Vector3(-12, 1, -3), new THREE.Vector3(-13, 2, -3), new THREE.Vector3(-14, 3, -4), new THREE.Vector3(-15, 4, -4)] }
-        ];
+// ─── FLOOR ───────────────────────────────────────────────────────
+function makeFloor(cx,w,d,z){
+  const f=box(w,0.06,d,floorMat);
+  f.position.set(cx,0,z); scene.add(f); return f;
+}
+makeFloor(ISO_CX, ISO_W+0.01, ISO_D, ROOM_Z_CX);
+makeFloor(ANT_CX, ANT_W+0.01, ANT_D, ROOM_Z_CX);
+makeFloor(COR_CX, COR_W+0.01, COR_D, ROOM_Z_CX);
 
-        function spawnParticle(pathData) {
-            const mat = pathData.type === 'supply' ? matSupply : pathData.type === 'extract' ? matExtract : matNeutral;
-            const p = new THREE.Mesh(particleGeo, mat);
-            scene.add(p);
-            
-            const curve = new THREE.CubicBezierCurve3(
-                pathData.points[0].clone().add(new THREE.Vector3(Math.random()-0.5, Math.random()*0.2, Math.random()-0.5)),
-                pathData.points[1],
-                pathData.points[2],
-                pathData.points[3].clone().add(new THREE.Vector3(Math.random()-0.5, Math.random()*0.5, Math.random()-0.5))
-            );
+// ─── WALLS (semi-transparent) ─────────────────────────────────────
+const walls = new THREE.Group();
+scene.add(walls);
 
-            particles.push({ mesh: p, curve: curve, progress: Math.random(), speed: 0.003 + Math.random() * 0.004, type: pathData.type });
-        }
+function addWall(x,y,z,w,h,d){
+  const m=box(w,h,d,wallMat);
+  m.position.set(x,y,z);
+  walls.add(m);
+}
 
-        // Spawn many particles
-        for(let i=0; i<80; i++) {
-            spawnParticle(paths[Math.floor(Math.random() * paths.length)]);
-        }
+const WH=ISO_H, WY=WH/2;
 
-        // --- 7. INTERACTION & LOGIC ---
-        let isIsoDoorOpen = false;
-        let isPlanView = false;
-        
-        const btnDoor = document.getElementById('btn-door');
-        const btnCamera = document.getElementById('btn-camera');
-        const warningBanner = document.getElementById('warning-banner');
-        
-        btnDoor.addEventListener('click', () => {
-            isIsoDoorOpen = !isIsoDoorOpen;
-            
-            // Physics-based door swing
-            new TWEEN.Tween(doorIso.rotation)
-                .to({ y: isIsoDoorOpen ? -Math.PI / 2 : 0 }, 1200)
-                .easing(TWEEN.Easing.Bounce.Out)
-                .start();
+// Isolation Room walls
+addWall(ISO_X,      WY, ROOM_Z_CX, 0.08, WH, ISO_D);      // left wall
+addWall(ISO_CX,     WY, ROOT_Z,    ISO_W, WH, 0.08);       // back wall
+addWall(ISO_CX,     WY, -ROOT_Z,   ISO_W, WH, 0.08);       // front wall
+// Right wall of isolation = left wall of anteroom — shared, no duplicate
 
-            if (isIsoDoorOpen) {
-                btnDoor.innerText = "Close Isolation Door";
-                btnDoor.style.borderColor = "var(--success)";
-                btnDoor.style.color = "var(--success)";
-                btnDoor.style.background = "rgba(0, 230, 118, 0.1)";
-                
-                warningBanner.style.display = "block";
-                document.getElementById('ante-press').innerText = "0.00\" WC";
-                document.getElementById('ante-press').className = "val-danger";
-                document.getElementById('iso-press').innerText = "0.00\" WC";
-                document.getElementById('iso-press').className = "val-danger";
-                document.getElementById('status-val').innerText = "SYSTEM COMPROMISED";
-                document.getElementById('status-val').className = "val-danger";
-            } else {
-                btnDoor.innerText = "Open Isolation Door";
-                btnDoor.style.borderColor = "var(--danger)";
-                btnDoor.style.color = "var(--danger)";
-                btnDoor.style.background = "rgba(255, 75, 75, 0.1)";
-                
-                warningBanner.style.display = "none";
-                document.getElementById('ante-press').innerText = "-0.01\" WC";
-                document.getElementById('ante-press').className = "val-warning";
-                document.getElementById('iso-press').innerText = "-0.03\" WC";
-                document.getElementById('iso-press').className = "val-danger";
-                document.getElementById('status-val').innerText = "SEALED (12 ACH)";
-                document.getElementById('status-val').className = "val-neutral";
-            }
-        });
+// Interior bathroom walls (inside isolation)
+const BATH_BX = ISO_X + BATH_W/2 + 0.08;
+const BATH_BZ = ROOT_Z + BATH_D/2;
+addWall(ISO_X + BATH_W, WY, BATH_BZ, 0.08, WH, BATH_D);   // bathroom right wall
+addWall(BATH_BX,       WY, ROOT_Z + BATH_D, BATH_W, WH, 0.08); // bathroom front wall
 
-        btnCamera.addEventListener('click', () => {
-            isPlanView = !isPlanView;
-            const targetPos = isPlanView ? new THREE.Vector3(-2, 35, 0) : new THREE.Vector3(22, 28, 22);
-            
-            new TWEEN.Tween(camera.position).to(targetPos, 2000).easing(TWEEN.Easing.Cubic.InOut).start();
-            btnCamera.innerText = isPlanView ? "Switch to 3D View" : "Switch to Plan View";
-        });
+// Anteroom walls
+addWall(ANT_CX, WY, ROOT_Z,  ANT_W, WH, 0.08);
+addWall(ANT_CX, WY, -ROOT_Z, ANT_W, WH, 0.08);
 
-        // --- 8. UI LABELS UPDATE ---
-        const labels = [
-            { id: 'label-corridor', pos: new THREE.Vector3(9, 4, 0) },
-            { id: 'label-anteroom', pos: new THREE.Vector3(0.5, 4, 0) },
-            { id: 'label-iso', pos: new THREE.Vector3(-6, 4, -2) },
-            { id: 'label-bath', pos: new THREE.Vector3(-12, 3, -3) },
-            { id: 'label-hepa', pos: new THREE.Vector3(-15, 6, -4.5) }
-        ];
+// Corridor walls
+addWall(COR_CX, WY, ROOT_Z,  COR_W, WH, 0.08);
+addWall(COR_CX, WY, -ROOT_Z, COR_W, WH, 0.08);
+addWall(COR_X+COR_W, WY, ROOM_Z_CX, 0.08, WH, COR_D);    // right wall corridor
 
-        function updateLabels() {
-            labels.forEach(l => {
-                const el = document.getElementById(l.id);
-                const pos = l.pos.clone();
-                pos.project(camera);
-                
-                const x = (pos.x * .5 + .5) * window.innerWidth;
-                const y = (pos.y * -.5 + .5) * window.innerHeight;
-                
-                if (pos.z > 1) {
-                    el.style.opacity = 0;
-                } else {
-                    el.style.opacity = 1;
-                    el.style.left = `${x}px`;
-                    el.style.top = `${y}px`;
-                }
-            });
-        }
+// Shared partition walls (solid semi-trans)
+addWall(ANT_X, WY, ROOM_Z_CX, 0.1, WH, ANT_D);   // Isolation/Anteroom partition
+addWall(COR_X, WY, ROOM_Z_CX, 0.1, WH, COR_D);   // Anteroom/Corridor partition
 
-        // --- 9. ANIMATION LOOP ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+// ─── CEILING ─────────────────────────────────────────────────────
+const ceilGroup = new THREE.Group();
+scene.add(ceilGroup);
 
-        function animate(time) {
-            requestAnimationFrame(animate);
-            TWEEN.update(time);
-            controls.update();
-            updateLabels();
+function addCeil(cx,w,d,z){
+  const m=box(w,0.08,d,ceilMat);
+  m.position.set(cx,WH,z);
+  ceilGroup.add(m);
+}
+addCeil(ISO_CX, ISO_W, ISO_D, ROOM_Z_CX);
+addCeil(ANT_CX, ANT_W, ANT_D, ROOM_Z_CX);
+addCeil(COR_CX, COR_W, COR_D, ROOM_Z_CX);
 
-            particles.forEach(p => {
-                // Chaos mode if door opens (lose directionality)
-                if (isIsoDoorOpen && p.type === 'flow') {
-                    p.mesh.position.y += Math.sin(time * 0.005) * 0.02;
-                    return; 
-                }
+// LED Strips on ceiling
+const ledGeom = new THREE.BoxGeometry(3,0.04,0.12);
+function addLED(cx,y,z){
+  const m=new THREE.Mesh(ledGeom,ledMat);
+  m.position.set(cx,y,z);
+  scene.add(m);
+  const light=new THREE.PointLight(0xe8f4ff,0.5,4);
+  light.position.copy(m.position);
+  light.position.y-=0.1;
+  scene.add(light);
+}
+addLED(ISO_CX, WH-0.02, ROOM_Z_CX);
+addLED(ANT_CX, WH-0.02, ROOM_Z_CX);
+addLED(COR_CX, WH-0.02, ROOM_Z_CX);
 
-                p.progress += p.speed;
-                if (p.progress >= 1) p.progress = 0;
-                
-                const pos = p.curve.getPointAt(p.progress);
-                p.mesh.position.copy(pos);
-            });
+// ─── EXTERNAL WINDOW (Isolation, left wall) ───────────────────────
+{
+  const wm = new THREE.Mesh(new THREE.BoxGeometry(0.05,1.0,1.4), glassMat);
+  wm.position.set(ISO_X, 1.8, 0.4);
+  scene.add(wm);
+  // Frame
+  const wfm = new THREE.Mesh(new THREE.BoxGeometry(0.06,1.1,1.5), doorFrameMat);
+  wfm.position.set(ISO_X, 1.8, 0.4);
+  scene.add(wfm);
+}
 
-            renderer.render(scene, camera);
-        }
-        animate(0);
-    </script>
+// ─── DOOR 1: Corridor → Anteroom (swings INTO anteroom) ──────────
+const DOOR_H = 2.1, DOOR_W = 0.9, DOOR_T = 0.06;
+const door1Group = new THREE.Group(); // pivot at hinge
+door1Group.position.set(COR_X, 0, -1.0);
+scene.add(door1Group);
+{
+  // Frame
+  const fr=box(DOOR_W+0.14, DOOR_H+0.06, 0.14, doorFrameMat);
+  fr.position.set(DOOR_W/2, DOOR_H/2, 0);
+  door1Group.add(fr);
+  // Door panel
+  const dp=box(DOOR_W, DOOR_H, DOOR_T, doorMat);
+  dp.position.set(DOOR_W/2, DOOR_H/2, 0.04);
+  door1Group.add(dp);
+  // Undercut gap (visual only — floor gap)
+  // Gasket strips
+  const gkH=box(0.04,DOOR_H,0.04,new THREE.MeshStandardMaterial({color:0x222222}));
+  gkH.position.set(0,DOOR_H/2,0); door1Group.add(gkH);
+  const gkH2=box(0.04,DOOR_H,0.04,new THREE.MeshStandardMaterial({color:0x222222}));
+  gkH2.position.set(DOOR_W+0.04,DOOR_H/2,0); door1Group.add(gkH2);
+  const gkTop=box(DOOR_W+0.1,0.04,0.04,new THREE.MeshStandardMaterial({color:0x222222}));
+  gkTop.position.set(DOOR_W/2+0.02,DOOR_H+0.02,0); door1Group.add(gkTop);
+}
+
+// ─── DOOR 2: Anteroom → Isolation (swings INTO isolation) ─────────
+const door2Group = new THREE.Group();
+door2Group.position.set(ANT_X, 0, -0.8);
+scene.add(door2Group);
+{
+  const fr=box(DOOR_W+0.14, DOOR_H+0.06, 0.14, doorFrameMat);
+  fr.position.set(-DOOR_W/2, DOOR_H/2, 0);
+  door2Group.add(fr);
+  const dp=box(DOOR_W, DOOR_H, DOOR_T, doorMat);
+  dp.position.set(-DOOR_W/2, DOOR_H/2, -0.04);
+  door2Group.add(dp);
+  // Viewing window
+  const vw=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.35,0.05), glassMat);
+  vw.position.set(-DOOR_W/2, DOOR_H*0.6, -0.04);
+  door2Group.add(vw);
+  // Gaskets
+  const gkH=box(0.04,DOOR_H,0.04,new THREE.MeshStandardMaterial({color:0x222222}));
+  gkH.position.set(-DOOR_W-0.04,DOOR_H/2,0); door2Group.add(gkH);
+  const gkH2=box(0.04,DOOR_H,0.04,new THREE.MeshStandardMaterial({color:0x222222}));
+  gkH2.position.set(0.04,DOOR_H/2,0); door2Group.add(gkH2);
+  const gkTop=box(DOOR_W+0.1,0.04,0.04,new THREE.MeshStandardMaterial({color:0x222222}));
+  gkTop.position.set(-DOOR_W/2,DOOR_H+0.02,0); door2Group.add(gkTop);
+}
+
+// ─── SUPPLY DIFFUSER (Ceiling, Isolation) ─────────────────────────
+const diffuserPos = new THREE.Vector3(ISO_CX, WH-0.05, 0.3);
+{
+  const d=box(0.5,0.05,0.5,metalMat);
+  d.position.copy(diffuserPos);
+  scene.add(d);
+  // Fins
+  for(let i=-2;i<=2;i++){
+    const fin=box(0.45,0.02,0.04,grilleColor);
+    fin.position.set(diffuserPos.x,diffuserPos.y-0.01,diffuserPos.z+i*0.08);
+    scene.add(fin);
+  }
+}
+
+// ─── EXTRACT GRILLE (Isolation Room, back wall low) ───────────────
+const isolEGPos = new THREE.Vector3(ISO_CX+0.5, 0.3, ROOT_Z+0.05);
+{
+  const eg=box(0.5,0.35,0.05, grilleColor);
+  eg.position.copy(isolEGPos);
+  scene.add(eg);
+  for(let i=0;i<4;i++){
+    const fin=box(0.44,0.04,0.06,metalMat);
+    fin.position.set(isolEGPos.x,isolEGPos.y-0.1+i*0.08,isolEGPos.z);
+    scene.add(fin);
+  }
+}
+
+// ─── BATHROOM EXTRACT GRILLE ──────────────────────────────────────
+const bathEGPos = new THREE.Vector3(ISO_X+BATH_W-0.02, 0.5, ROOT_Z+0.8);
+{
+  const eg=box(0.05,0.3,0.25, grilleColor);
+  eg.position.copy(bathEGPos);
+  scene.add(eg);
+}
+
+// ─── DUCTWORK (exposed on ceiling) ───────────────────────────────
+function duct(x1,y1,z1,x2,y2,z2,r){
+  const dir=new THREE.Vector3(x2-x1,y2-y1,z2-z1);
+  const len=dir.length();
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,8), metalMat);
+  m.position.set((x1+x2)/2,(y1+y2)/2,(z1+z2)/2);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+  m.castShadow=true;
+  scene.add(m);
+}
+
+// Main exhaust riser from isolation EG up to ceiling
+duct(isolEGPos.x, 0.48, isolEGPos.z, isolEGPos.x, WH, isolEGPos.z, 0.09);
+// Ceiling exhaust run toward right
+duct(isolEGPos.x, WH+0.05, isolEGPos.z, COR_X+2, WH+0.05, isolEGPos.z, 0.09);
+// VCD box on duct
+{
+  const vcd=box(0.22,0.22,0.22,metalMat);
+  vcd.position.set(ANT_CX, WH+0.05, isolEGPos.z);
+  scene.add(vcd);
+}
+// Bathroom exhaust duct
+duct(bathEGPos.x, bathEGPos.y, bathEGPos.z, ISO_CX, WH, bathEGPos.z, 0.06);
+duct(ISO_CX, WH+0.05, bathEGPos.z, ISO_CX, WH+0.05, isolEGPos.z, 0.06);
+
+// ─── HEPA FILTER HOUSING ─────────────────────────────────────────
+const hepaPos = new THREE.Vector3(COR_X+1.2, WH+0.4, isolEGPos.z);
+{
+  const hf=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,0.55,12), hepaColor);
+  hf.position.copy(hepaPos);
+  scene.add(hf);
+  const cap1=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.06,12), metalMat);
+  cap1.position.set(hepaPos.x,hepaPos.y+0.3,hepaPos.z); scene.add(cap1);
+  const cap2=cap1.clone();
+  cap2.position.set(hepaPos.x,hepaPos.y-0.3,hepaPos.z); scene.add(cap2);
+}
+// Exhaust fan (after HEPA)
+{
+  const fan=box(0.3,0.3,0.3,metalMat);
+  fan.position.set(hepaPos.x+0.5,hepaPos.y,hepaPos.z);
+  scene.add(fan);
+}
+// Exhaust vertical stack going high
+duct(hepaPos.x+0.8, hepaPos.y, hepaPos.z, hepaPos.x+0.8, hepaPos.y+5.5, hepaPos.z, 0.09);
+// Stack cap
+{
+  const cap=box(0.25,0.08,0.25,metalMat);
+  cap.position.set(hepaPos.x+0.8, hepaPos.y+5.6, hepaPos.z);
+  scene.add(cap);
+}
+// Fresh air intake (far from stack)
+{
+  const ia=box(0.4,0.3,0.06,grilleColor);
+  ia.position.set(ISO_X-0.2, 1.8, ROOT_Z+0.04);
+  scene.add(ia);
+}
+
+// ─── HOSPITAL BED ─────────────────────────────────────────────────
+{
+  const bx=ISO_CX+0.3, by=0, bz=0.5;
+  // Frame
+  const fr=box(1.9,0.5,0.85,bedFrameMat);
+  fr.position.set(bx,0.25,bz); scene.add(fr);
+  // Mattress
+  const ma=box(1.8,0.15,0.8,bedMat);
+  ma.position.set(bx,0.53,bz); scene.add(ma);
+  // Pillow
+  const pi=box(0.5,0.1,0.5,new THREE.MeshStandardMaterial({color:0xeef6ff,roughness:0.8}));
+  pi.position.set(bx-0.6,0.62,bz); scene.add(pi);
+  // Headboard
+  const hb=box(0.06,0.7,0.85,bedFrameMat);
+  hb.position.set(bx-0.98,0.6,bz); scene.add(hb);
+  // Legs
+  [-0.85,0.85].forEach(dx=>[-0.35,0.35].forEach(dz=>{
+    const leg=box(0.06,0.25,0.06,bedFrameMat);
+    leg.position.set(bx+dx,0.12,bz+dz); scene.add(leg);
+  }));
+}
+
+// Visitor chair
+{
+  const ch=box(0.5,0.04,0.5,new THREE.MeshStandardMaterial({color:0x334455,roughness:0.7}));
+  ch.position.set(ISO_X+0.6,0.45,-1.2); scene.add(ch);
+  const back=box(0.5,0.5,0.04,new THREE.MeshStandardMaterial({color:0x334455,roughness:0.7}));
+  back.position.set(ISO_X+0.6,0.7,-1.45); scene.add(back);
+  [[-0.2,-0.2],[0.2,-0.2],[-0.2,0.2],[0.2,0.2]].forEach(([dx,dz])=>{
+    const leg=box(0.04,0.45,0.04,metalMat);
+    leg.position.set(ISO_X+0.6+dx,0.22,-1.2+dz); scene.add(leg);
+  });
+}
+
+// ─── CSS2D LABELS ────────────────────────────────────────────────
+const labelObjects = [];
+
+function makeLabel(text, pos, cls=''){
+  const div=document.createElement('div');
+  div.className='label '+cls;
+  div.textContent=text;
+  const obj=new THREE.CSS2DObject(div);
+  obj.position.copy(pos);
+  scene.add(obj);
+  labelObjects.push(obj);
+  return obj;
+}
+
+const labelsVisible = {val:true};
+
+makeLabel('ISOLATION ROOM', new THREE.Vector3(ISO_CX, 2.85, ROOT_Z+0.3), 'red');
+makeLabel('ANTEROOM', new THREE.Vector3(ANT_CX, 2.85, ROOT_Z+0.3), 'amber');
+makeLabel('CORRIDOR', new THREE.Vector3(COR_CX, 2.85, ROOT_Z+0.3), 'green');
+makeLabel('BATHROOM', new THREE.Vector3(ISO_X+BATH_W/2+0.1, 2.2, ROOT_Z+BATH_D/2+0.1), '');
+makeLabel('HEPA FILTER', new THREE.Vector3(hepaPos.x, hepaPos.y+0.45, hepaPos.z), 'green');
+makeLabel('VCD', new THREE.Vector3(ANT_CX, WH+0.38, isolEGPos.z), 'amber');
+makeLabel('Supply Diffuser', new THREE.Vector3(diffuserPos.x, diffuserPos.y+0.3, diffuserPos.z), 'green');
+makeLabel('Extract Grille', new THREE.Vector3(isolEGPos.x, 0.75, isolEGPos.z+0.3), 'amber');
+makeLabel('Bath EG', new THREE.Vector3(bathEGPos.x-0.3, 0.85, bathEGPos.z), 'amber');
+makeLabel('Exhaust Stack →Outside', new THREE.Vector3(hepaPos.x+0.8, hepaPos.y+4.0, hepaPos.z+0.4), 'arrow');
+makeLabel('← Corridor→Anteroom→Isolation', new THREE.Vector3(ANT_CX, 0.2, -ROOT_Z+0.5), 'arrow');
+
+// ─── PARTICLES ───────────────────────────────────────────────────
+const SUPPLY_COLOR = new THREE.Color(0x00FFAA);
+const EXTRACT_COLOR = new THREE.Color(0xFFAA00);
+const MAKEUP_COLOR = new THREE.Color(0xffffff);
+
+let particlesVisible = true;
+let doorOpen = false;
+
+// Generic particle system
+function makeParticleSystem(count, color, makePos, makeVel){
+  const positions = new Float32Array(count*3);
+  const velocities = [];
+  const lifetimes = new Float32Array(count);
+  const ages = new Float32Array(count);
+
+  for(let i=0;i<count;i++){
+    const p=makePos(i);
+    positions[i*3]=p.x; positions[i*3+1]=p.y; positions[i*3+2]=p.z;
+    velocities.push(makeVel(i));
+    lifetimes[i]=1.0+Math.random()*2.0;
+    ages[i]=Math.random()*lifetimes[i];
+  }
+
+  const geom=new THREE.BufferGeometry();
+  geom.setAttribute('position',new THREE.BufferAttribute(positions,3));
+
+  const mat=new THREE.PointsMaterial({color,size:0.07,transparent:true,opacity:0.75,depthWrite:false,blending:THREE.AdditiveBlending});
+  const pts=new THREE.Points(geom,mat);
+  scene.add(pts);
+
+  return {pts, positions, velocities, lifetimes, ages, makePos, makeVel, count};
+}
+
+function updateParticles(sys, dt, active){
+  const pos=sys.positions;
+  for(let i=0;i<sys.count;i++){
+    sys.ages[i]+=dt;
+    if(!active || sys.ages[i]>sys.lifetimes[i]){
+      const p=sys.makePos(i);
+      pos[i*3]=p.x; pos[i*3+1]=p.y; pos[i*3+2]=p.z;
+      sys.velocities[i]=sys.makeVel(i);
+      sys.ages[i]=0;
+    } else {
+      pos[i*3]+=sys.velocities[i].x*dt;
+      pos[i*3+1]+=sys.velocities[i].y*dt;
+      pos[i*3+2]+=sys.velocities[i].z*dt;
+    }
+  }
+  sys.pts.geometry.attributes.position.needsUpdate=true;
+}
+
+// Supply air: from diffuser downward into room, spreading
+const supplyPS = makeParticleSystem(220, SUPPLY_COLOR,
+  ()=>({x:diffuserPos.x+(.5-Math.random())*0.4, y:diffuserPos.y-0.05, z:diffuserPos.z+(.5-Math.random())*0.4}),
+  ()=>({x:(.5-Math.random())*0.25, y:-0.4-Math.random()*0.3, z:(.5-Math.random())*0.25})
+);
+
+// Contaminated extract: rising toward isolation EG
+const extractPS = makeParticleSystem(180, EXTRACT_COLOR,
+  ()=>({x:ISO_CX+(.5-Math.random())*1.5, y:0.1+Math.random()*1.2, z:ROOM_Z_CX+(.5-Math.random())*1.5}),
+  (i)=>{
+    const tx=isolEGPos.x, tz=isolEGPos.z;
+    const sx=ISO_CX+(Math.random()-0.5)*2, sz=ROOM_Z_CX+(Math.random()-0.5)*2;
+    const dx=tx-sx, dz=tz-sz;
+    const spd=0.3+Math.random()*0.3;
+    return {x:dx*spd*0.5, y:0.05+Math.random()*0.1, z:dz*spd*0.5};
+  }
+);
+
+// Bathroom extract
+const bathExtractPS = makeParticleSystem(60, EXTRACT_COLOR,
+  ()=>({x:bathEGPos.x-0.2+Math.random()*0.3, y:0.05+Math.random()*0.8, z:ROOT_Z+0.3+Math.random()*0.8}),
+  ()=>({x:0.05, y:0.15+Math.random()*0.1, z:0})
+);
+
+// Make-up air: under door1 (corridor -> anteroom)
+const makeup1PS = makeParticleSystem(60, MAKEUP_COLOR,
+  ()=>({x:COR_X+(.5-Math.random())*0.3, y:0.02+Math.random()*0.06, z:-1.0+(.5-Math.random())*0.7}),
+  ()=>({x:-0.4-Math.random()*0.2, y:0.01, z:0})
+);
+
+// Make-up air: under door2 (anteroom -> isolation)
+const makeup2PS = makeParticleSystem(80, MAKEUP_COLOR,
+  ()=>({x:ANT_X+0.05+Math.random()*0.1, y:0.02+Math.random()*0.06, z:-0.8+(.5-Math.random())*0.7}),
+  ()=>({x:-0.5-Math.random()*0.3, y:0.01, z:0})
+);
+
+// Duct particles: supply in duct from outside
+const ductSupplyPS = makeParticleSystem(40, SUPPLY_COLOR,
+  ()=>({x:ISO_X+0.1, y:1.8, z:ROOT_Z+0.1}),
+  ()=>({x:0.3+Math.random()*0.2, y:0.02, z:0})
+);
+
+// Duct exhaust after HEPA
+const hepaExhaustPS = makeParticleSystem(50, new THREE.Color(0x44ff88),
+  ()=>({x:hepaPos.x+0.8, y:hepaPos.y+0.3, z:hepaPos.z}),
+  ()=>({x:0, y:0.5+Math.random()*0.3, z:0})
+);
+
+// ─── DOOR ANIMATION ───────────────────────────────────────────────
+let doorAngle = 0;
+let doorAnimating = false;
+let doorTargetAngle = 0;
+
+function toggleDoor(){
+  if(doorAnimating) return;
+  doorOpen = !doorOpen;
+  doorTargetAngle = doorOpen ? -Math.PI*0.7 : 0;
+  doorAnimating = true;
+
+  const warning = document.getElementById('warning');
+  const btn = document.getElementById('btn-door');
+  const status = document.getElementById('h-status');
+
+  if(doorOpen){
+    warning.style.display='block';
+    btn.textContent='✓ Close Door (Restore)';
+    btn.classList.add('active');
+    status.textContent='⚠ PRESSURE LOST';
+    status.style.color='#ff4444';
+    animateGaugesTo(0,0,0);
+    updateHUD(false);
+  } else {
+    warning.style.display='none';
+    btn.textContent='⚠ Open Door (Emergency)';
+    btn.classList.remove('active');
+    status.textContent='● COMPLIANT';
+    status.style.color='#00FFAA';
+    animateGaugesTo(-0.01,-0.03,null);
+    updateHUD(true);
+  }
+}
+
+let gaugeTargets = {ant:-0.01, iso:-0.03};
+let gaugeCurrent = {ant:-0.01, iso:-0.03};
+
+function animateGaugesTo(ant,iso){
+  gaugeTargets.ant = ant;
+  gaugeTargets.iso = iso;
+}
+
+function updateHUD(normal){
+  document.getElementById('h-supply').textContent = normal?'340 CFM':'0 CFM';
+  document.getElementById('h-iseg').textContent = normal?'440 CFM':'~0 CFM';
+  document.getElementById('h-batheg').textContent = normal?'50 CFM':'~0 CFM';
+  document.getElementById('h-total').textContent = normal?'490 CFM':'~0 CFM';
+}
+
+// ─── VIEW TOGGLE ─────────────────────────────────────────────────
+document.getElementById('btn-view').addEventListener('click',()=>{
+  isOrtho=!isOrtho;
+  activeCamera = isOrtho ? orthoCam : perspCam;
+  ceilGroup.visible = !isOrtho;
+  document.getElementById('view-label').textContent = isOrtho?'2D PLAN VIEW':'ISOMETRIC 3D VIEW';
+});
+
+document.getElementById('btn-door').addEventListener('click',toggleDoor);
+
+document.getElementById('btn-labels').addEventListener('click',()=>{
+  labelsVisible.val=!labelsVisible.val;
+  labelObjects.forEach(l=>l.visible=labelsVisible.val);
+});
+
+document.getElementById('btn-particles').addEventListener('click',()=>{
+  particlesVisible=!particlesVisible;
+});
+
+// ─── GRID FLOOR ───────────────────────────────────────────────────
+const gridHelper = new THREE.GridHelper(30, 30, 0x1a3550, 0x1a3550);
+gridHelper.position.y=0.01;
+scene.add(gridHelper);
+
+// ─── RENDER LOOP ─────────────────────────────────────────────────
+const clock = new THREE.Clock();
+let time = 0;
+
+// Manometer digit animation
+function animManometer(){
+  const dt2=0.04;
+  gaugeCurrent.ant += (gaugeTargets.ant - gaugeCurrent.ant)*dt2*3;
+  gaugeCurrent.iso += (gaugeTargets.iso - gaugeCurrent.iso)*dt2*3;
+  document.getElementById('g-anteroom').textContent = gaugeCurrent.ant.toFixed(2);
+  document.getElementById('g-isolation').textContent = gaugeCurrent.iso.toFixed(2);
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05);
+  time+=dt;
+
+  controls.update();
+
+  // Door animation
+  if(doorAnimating){
+    doorAngle += (doorTargetAngle - doorAngle)*0.08;
+    door2Group.rotation.y = doorAngle;
+    if(Math.abs(doorAngle-doorTargetAngle)<0.003) doorAnimating=false;
+  }
+
+  // Particle systems
+  const flowActive = !doorOpen;
+  updateParticles(supplyPS, dt, flowActive);
+  updateParticles(extractPS, dt, flowActive);
+  updateParticles(bathExtractPS, dt, flowActive);
+  updateParticles(makeup1PS, dt, flowActive);
+  updateParticles(makeup2PS, dt, flowActive && !doorOpen);
+  updateParticles(ductSupplyPS, dt, flowActive);
+  updateParticles(hepaExhaustPS, dt, flowActive);
+
+  // Visibility
+  [supplyPS,extractPS,bathExtractPS,makeup1PS,makeup2PS,ductSupplyPS,hepaExhaustPS].forEach(s=>{
+    s.pts.visible = particlesVisible;
+  });
+
+  // Fade particles when door open
+  const alpha = doorOpen ? 0.12 : 0.75;
+  [supplyPS,extractPS,bathExtractPS,makeup1PS,makeup2PS,ductSupplyPS,hepaExhaustPS].forEach(s=>{
+    s.pts.material.opacity = alpha;
+  });
+
+  // Manometer animation
+  animManometer();
+
+  renderer.render(scene, activeCamera);
+  labelRenderer.render(scene, activeCamera);
+}
+
+// ─── RESIZE ──────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{
+  const W=innerWidth, H=innerHeight;
+  perspCam.aspect=W/H;
+  perspCam.updateProjectionMatrix();
+  const r=W/H;
+  orthoCam.left=-orthoSize*r; orthoCam.right=orthoSize*r;
+  orthoCam.updateProjectionMatrix();
+  renderer.setSize(W,H);
+  labelRenderer.setSize(W,H);
+});
+
+animate();
+</script>
 </body>
 </html>
