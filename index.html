@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>محاكاة غرفة العزل AII | ضغط سالب ديناميكي</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #050a14;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(10, 20, 30, 0.85);
+            color: #eef4ff;
+            padding: 18px 25px;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            border-right: 5px solid #00a8ff;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 10;
+            text-align: right;
+            border: 1px solid #2a4c7c;
+        }
+        #dashboard {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 20px 30px;
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            border: 1px solid #3a6ea5;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            pointer-events: none;
+            z-index: 10;
+            font-family: 'Courier New', monospace;
+            min-width: 260px;
+        }
+        #dashboard h3 {
+            margin: 0 0 15px 0;
+            color: #7ec8ff;
+            text-align: center;
+            border-bottom: 1px solid #3a6ea5;
+            padding-bottom: 8px;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .value {
+            color: #a0e0ff;
+            font-weight: bold;
+        }
+        #pressure-panel {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            border: 1px solid #ffaa33;
+            pointer-events: none;
+            z-index: 10;
+            text-align: center;
+            min-width: 200px;
+        }
+        .gauge {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+        .gauge-bar {
+            width: 100px;
+            height: 12px;
+            background: #333;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+        .gauge-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s, background 0.3s;
+        }
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 15px;
+            z-index: 20;
+            pointer-events: none;
+        }
+        .btn {
+            pointer-events: auto;
+            background: #1e3a5f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            border: 1px solid #4a8bb3;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .btn:hover {
+            background: #2a5a8c;
+            transform: scale(1.02);
+        }
+        .btn.warning {
+            background: #9e2a2a;
+            border-color: #ff7b7b;
+        }
+        .btn.warning:hover {
+            background: #c03939;
+        }
+        #warning-msg {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #c0392b;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 20px;
+            z-index: 25;
+            box-shadow: 0 0 30px rgba(192, 57, 43, 0.8);
+            border: 2px solid #ffb3b3;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        #status-tag {
+            position: absolute;
+            bottom: 120px;
+            left: 30px;
+            color: #ccc;
+            font-size: 14px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 12px;
+            border-radius: 20px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        @media (max-width: 700px) {
+            #info { font-size: 12px; padding: 10px; }
+            .btn { padding: 8px 16px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>🏥 غرفة عزل العدوى المنقولة بالهواء (AII)</h2>
+        <p>ضغط سالب | HEPA Filter | 12 ACH | حمام داخل الغرفة | Anteroom</p>
+    </div>
+    <div id="dashboard">
+        <h3>📊 CFM / ACH Dashboard</h3>
+        <div class="data-row"><span>هواء التزويد (Supply):</span><span class="value" id="supply-val">340 CFM (12 ACH)</span></div>
+        <div class="data-row"><span>سحب الغرفة (Extract):</span><span class="value" id="extract-val">440 CFM</span></div>
+        <div class="data-row"><span>سحب الحمام (Bath):</span><span class="value" id="bath-val">50 CFM</span></div>
+        <div class="data-row"><span>إجمالي السحب (Total):</span><span class="value" id="total-val">490 CFM</span></div>
+        <div class="data-row"><span>فرق الضغط (Offset):</span><span class="value" id="offset-val">+100 CFM</span></div>
+        <hr style="border-color:#2a4c7c; margin:12px 0;">
+        <div style="font-size:13px; text-align:center; color:#aad0ff;">✅ 100% هواء نقي + HEPA</div>
+    </div>
+    <div id="pressure-panel">
+        <h3 style="margin-top:0; color:#ffd966;">📉 الضغط السالب (in. WC)</h3>
+        <div class="gauge"><span>🚪 الممر</span><div class="gauge-bar"><div id="corr-gauge" class="gauge-fill" style="width:0%; background:#2ecc71;"></div></div><span id="corr-val">0.000</span></div>
+        <div class="gauge"><span>🚪 Anteroom</span><div class="gauge-bar"><div id="ante-gauge" class="gauge-fill" style="width:30%; background:#f1c40f;"></div></div><span id="ante-val">-0.010</span></div>
+        <div class="gauge"><span>🚪 العزل</span><div class="gauge-bar"><div id="iso-gauge" class="gauge-fill" style="width:100%; background:#e67e22;"></div></div><span id="iso-val">-0.045</span></div>
+        <p style="font-size:12px; margin-top:15px; opacity:0.8;">⬅️ تدفق الهواء: الممر ← Anteroom ← الغرفة</p>
+    </div>
+    <div id="controls">
+        <button class="btn" id="view-toggle">🔁 عرض مخطط (S-S)</button>
+        <button class="btn warning" id="door-toggle">🚪 فتح باب العزل</button>
+    </div>
+    <div id="warning-msg">⚠️ فقد الضغط السالب - ممنوع الدخول ⚠️</div>
+    <div id="status-tag">⚙️ نظام HEPA قيد التشغيل | VCD مضبوط</div>
+
+    <!-- تضمين Three.js والمكتبات المساعدة -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- الإعداد الأساسي ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a1520);
+        scene.fog = new THREE.FogExp2(0x0a1520, 0.012);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(12, 8, 18);
+        camera.lookAt(2, 1.5, 0);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+        
+        // CSS2 Renderer للتسميات
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';  // السماح بالنقر عبر التسميات
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.target.set(2, 1.8, 0);
+        controls.maxPolarAngle = Math.PI / 2.3;
+        
+        // --- إضاءة ---
+        // Ambient
+        scene.add(new THREE.AmbientLight(0x404c66, 0.45));
+        // Main directional light (sun)
+        const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+        sunLight.position.set(8, 12, 5);
+        sunLight.castShadow = true;
+        sunLight.receiveShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        const d = 15;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 30;
+        sunLight.shadow.bias = -0.0005;
+        scene.add(sunLight);
+        
+        // Fill lights
+        const fillLight1 = new THREE.PointLight(0x446688, 0.8);
+        fillLight1.position.set(2, 5, 6);
+        scene.add(fillLight1);
+        const fillLight2 = new THREE.PointLight(0x88aacc, 0.5);
+        fillLight2.position.set(-2, 4, -4);
+        scene.add(fillLight2);
+        
+        // إضاءة السقف الداخلية
+        const ceilingLight1 = new THREE.PointLight(0xffffff, 1.0);
+        ceilingLight1.position.set(3.5, 3.2, 1.5);
+        scene.add(ceilingLight1);
+        const ceilingLight2 = new THREE.PointLight(0xffffff, 0.8);
+        ceilingLight2.position.set(0.5, 3.2, -2);
+        scene.add(ceilingLight2);
+        
+        // --- كائنات مساعدة (شبكة أرضية) ---
+        const gridHelper = new THREE.GridHelper(20, 20, 0x88aacc, 0x334455);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+        
+        // --- إنشاء النموذج المعماري ---
+        // الأبعاد: الغرفة الرئيسية 4x4x3 (متر)، Anteroom 2.5x4x3، الممر 2x4x3
+        // سنبني باستخدام الصناديق الشفافة للجدران
+        
+        const wallMaterial = new THREE.MeshStandardMaterial({
+            color: 0xc0d0e0,
+            transparent: true,
+            opacity: 0.25,
+            roughness: 0.4,
+            metalness: 0.1,
+            side: THREE.DoubleSide
+        });
+        const solidMaterial = new THREE.MeshStandardMaterial({ color: 0x7c8fa0, roughness: 0.6 });
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x2a3a4a, roughness: 0.8, metalness: 0.1 });
+        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xa57c50, roughness: 0.7 });
+        const glassMaterial = new THREE.MeshStandardMaterial({ color: 0xaaccdd, emissive: new THREE.Color(0x112233), transparent: true, opacity: 0.4 });
+        
+        // --- الأرضيات ---
+        function addFloor(width, depth, x, z, y=0) {
+            const floor = new THREE.Mesh(new THREE.BoxGeometry(width, 0.1, depth), floorMaterial);
+            floor.position.set(x, y, z);
+            floor.receiveShadow = true;
+            scene.add(floor);
+        }
+        // ممر (يمين)
+        addFloor(2.2, 4.5, 6.5, 0, 0);
+        // Anteroom
+        addFloor(2.8, 4.5, 3.5, 0, 0);
+        // غرفة العزل
+        addFloor(4.5, 4.5, -0.5, 0, 0);
+        // حمام (داخل غرفة العزل، يسار)
+        addFloor(1.8, 2.2, -2.2, 1.8, 0);
+        
+        // --- الجدران الخارجية (غلاف) ---
+        function addWall(w, h, d, x, y, z, rotY=0, mat=wallMaterial) {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+            wall.position.set(x, y+h/2, z);
+            wall.rotation.y = rotY;
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            scene.add(wall);
+            return wall;
+        }
+        // الجدار الخلفي للممر + Anteroom + غرفة (جهة Z+)
+        addWall(9.5, 3.0, 0.15, 2.0, 0, 2.3, 0);
+        // الجدار الأمامي (Z-)
+        addWall(9.5, 3.0, 0.15, 2.0, 0, -2.3, 0);
+        // الجدار الأيسر لغرفة العزل (X-)
+        addWall(0.15, 3.0, 4.5, -2.3, 0, 0, 0);
+        // الجدار الأيمن للممر (X+)
+        addWall(0.15, 3.0, 4.5, 7.5, 0, 0, 0);
+        // فواصل داخلية:
+        // فاصل ممر/Anteroom (عند X=5.2)
+        const divider1 = addWall(0.2, 3.0, 4.5, 5.2, 0, 0, 0, solidMaterial);
+        divider1.material.transparent = true; divider1.material.opacity = 0.4;
+        // فاصل Anteroom/غرفة العزل (عند X=2.3)
+        const divider2 = addWall(0.2, 3.0, 4.5, 2.3, 0, 0, 0, solidMaterial);
+        divider2.material.transparent = true; divider2.material.opacity = 0.4;
+        // جدار الحمام (داخل الغرفة)
+        const bathWall1 = addWall(2.2, 3.0, 0.15, -0.9, 0, 0.8, 0, solidMaterial);
+        bathWall1.material.transparent = true; bathWall1.material.opacity = 0.3;
+        const bathWall2 = addWall(0.15, 3.0, 2.2, 0.0, 0, -0.2, 0, solidMaterial);
+        
+        // --- السقف (صلب) ---
+        const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xe0e8f0, roughness: 0.7, emissive: new THREE.Color(0x111122) });
+        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(10.0, 0.1, 5.0), ceilingMat);
+        ceiling.position.set(2.5, 3.0, 0);
+        ceiling.receiveShadow = true;
+        ceiling.castShadow = true;
+        scene.add(ceiling);
+        
+        // إضاءة سطحية (Surface mounted)
+        const lightPanelGeo = new THREE.BoxGeometry(1.2, 0.08, 0.4);
+        const lightPanelMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: new THREE.Color(0xccddff) });
+        const panel1 = new THREE.Mesh(lightPanelGeo, lightPanelMat);
+        panel1.position.set(0.0, 2.96, 0.5);
+        panel1.castShadow = true;
+        scene.add(panel1);
+        const panel2 = panel1.clone();
+        panel2.position.set(3.5, 2.96, -1.0);
+        scene.add(panel2);
+        
+        // --- الأبواب ---
+        function createDoor(width, height, depth, x, y, z, rotY, swingDir = 1) {
+            const doorGroup = new THREE.Group();
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x8b6b4d });
+            const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), doorMaterial);
+            doorLeaf.castShadow = true;
+            doorLeaf.receiveShadow = true;
+            doorLeaf.position.set(0, height/2, 0);
+            doorGroup.add(doorLeaf);
+            
+            // نافذة زجاجية في باب العزل
+            if (width > 0.8) {
+                const windowGlass = new THREE.Mesh(new THREE.BoxGeometry(width*0.5, height*0.4, depth+0.02), glassMaterial);
+                windowGlass.position.set(0, height*0.55, 0);
+                windowGlass.castShadow = true;
+                doorGroup.add(windowGlass);
+            }
+            
+            doorGroup.position.set(x, y, z);
+            doorGroup.rotation.y = rotY;
+            return doorGroup;
+        }
+        
+        // باب الممر إلى Anteroom (عند X=5.2, Z=0 تقريبا)
+        const doorCorr = createDoor(1.0, 2.2, 0.08, 5.2, 0.0, -0.9, 0);
+        scene.add(doorCorr);
+        // باب Anteroom إلى العزل (عند X=2.3) - هذا الباب يفتح للداخل (جهة الغرفة)
+        const doorIso = createDoor(1.0, 2.2, 0.08, 2.3, 0.0, -0.9, 0);
+        scene.add(doorIso);
+        
+        // الخلوص السفلي (Undercut) نعكسه عبر عدم وجود جسم في الأسفل - كافي
+        
+        // --- شباك خارجي (بدون مقبض) في غرفة العزل ---
+        const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.5, 0.1), new THREE.MeshStandardMaterial({ color: 0xccccdd }));
+        windowFrame.position.set(-2.2, 1.8, 0.5);
+        windowFrame.castShadow = true;
+        scene.add(windowFrame);
+        const windowGlass = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.3, 0.05), glassMaterial);
+        windowGlass.position.set(-2.2, 1.8, 0.55);
+        windowGlass.castShadow = true;
+        scene.add(windowGlass);
+        
+        // --- مكونات HVAC: مجاري، فتحات، HEPA ---
+        // Supply diffuser في سقف غرفة العزل
+        const diffuser = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 0.1, 8), new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3 }));
+        diffuser.position.set(0.8, 2.95, 0.2);
+        diffuser.rotation.x = Math.PI/2;
+        diffuser.receiveShadow = true;
+        scene.add(diffuser);
+        
+        // Extract Grill (EG) في غرفة العزل
+        const egGeo = new THREE.BoxGeometry(0.8, 0.5, 0.1);
+        const egMat = new THREE.MeshStandardMaterial({ color: 0x555555, emissive: new THREE.Color(0x221100) });
+        const egMain = new THREE.Mesh(egGeo, egMat);
+        egMain.position.set(-1.5, 1.5, -2.0);
+        egMain.castShadow = true;
+        scene.add(egMain);
+        
+        // EG الحمام
+        const egBath = egMain.clone();
+        egBath.position.set(-1.8, 1.8, 1.5);
+        egBath.scale.set(0.8, 0.6, 0.1);
+        scene.add(egBath);
+        
+        // مجرى الهواء و HEPA
+        const ductMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.7 });
+        const duct1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 2.5), ductMat);
+        duct1.position.set(-1.5, 2.4, -2.0);
+        duct1.castShadow = true;
+        scene.add(duct1);
+        const hepaHousing = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.2, 1.0), new THREE.MeshStandardMaterial({ color: 0x4a6c8e }));
+        hepaHousing.position.set(-2.2, 2.0, -2.8);
+        hepaHousing.castShadow = true;
+        scene.add(hepaHousing);
+        
+        // --- نظام الجسيمات (تدفق الهواء) ---
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+        
+        // توليد مسارات الجسيمات
+        function createFlowLine(points, color, size=0.08, count=40) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colorsArray = new Float32Array(count * 3);
+            const col = new THREE.Color(color);
+            
+            for (let i = 0; i < count; i++) {
+                const t = i / (count-1);
+                const idx = Math.floor(t * (points.length-1));
+                const frac = (t * (points.length-1)) - idx;
+                const p1 = points[idx];
+                const p2 = points[Math.min(idx+1, points.length-1)];
+                const px = p1.x + (p2.x - p1.x) * frac;
+                const py = p1.y + (p2.y - p1.y) * frac;
+                const pz = p1.z + (p2.z - p1.z) * frac;
+                positions[i*3] = px;
+                positions[i*3+1] = py;
+                positions[i*3+2] = pz;
+                colorsArray[i*3] = col.r;
+                colorsArray[i*3+1] = col.g;
+                colorsArray[i*3+2] = col.b;
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
+            
+            const material = new THREE.PointsMaterial({ size: size, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending });
+            const pointsObj = new THREE.Points(geometry, material);
+            pointsObj.userData.offset = Math.random() * 100;
+            return pointsObj;
+        }
+        
+        // مسار الهواء النقي (أخضر) من الناشر إلى الغرفة
+        const supplyPath = [
+            new THREE.Vector3(0.8, 2.8, 0.2), new THREE.Vector3(0.8, 2.0, 0.5), new THREE.Vector3(0.0, 1.5, 0.8), new THREE.Vector3(-1.0, 1.0, 0.2)
+        ];
+        const supplyFlow = createFlowLine(supplyPath, 0x33cc99, 0.09, 35);
+        particleGroup.add(supplyFlow);
+        
+        // مسار الهواء الملوث (برتقالي) إلى EG
+        const exhaustPath = [
+            new THREE.Vector3(0.5, 1.2, -1.0), new THREE.Vector3(-0.5, 1.5, -1.8), new THREE.Vector3(-1.5, 1.5, -2.0)
+        ];
+        const exhaustFlow = createFlowLine(exhaustPath, 0xff8833, 0.1, 40);
+        particleGroup.add(exhaustFlow);
+        
+        // مسار الهواء من الممر إلى Anteroom (أبيض)
+        const doorFlowPath = [
+            new THREE.Vector3(5.5, 0.3, -0.9), new THREE.Vector3(4.5, 0.4, -0.9), new THREE.Vector3(3.5, 0.5, -0.9), new THREE.Vector3(2.8, 0.6, -0.9)
+        ];
+        const doorFlow = createFlowLine(doorFlowPath, 0xeeeeee, 0.07, 30);
+        particleGroup.add(doorFlow);
+        
+        // مسار سحب الحمام
+        const bathPath = [
+            new THREE.Vector3(-1.5, 1.0, 1.2), new THREE.Vector3(-1.8, 1.6, 1.5)
+        ];
+        const bathFlow = createFlowLine(bathPath, 0xffaa66, 0.08, 20);
+        particleGroup.add(bathFlow);
+        
+        // --- تسميات CSS2D ---
+        function createLabel(text, pos, fontSize='16px', color='#aaccff') {
+            const div = document.createElement('div');
+            div.textContent = text;
+            div.style.color = '#fff';
+            div.style.fontSize = fontSize;
+            div.style.fontWeight = 'bold';
+            div.style.textShadow = '1px 1px 3px black';
+            div.style.padding = '4px 12px';
+            div.style.borderRadius = '20px';
+            div.style.background = 'rgba(20,40,70,0.8)';
+            div.style.border = '1px solid '+color;
+            div.style.pointerEvents = 'none';
+            div.style.whiteSpace = 'nowrap';
+            
+            const label = new CSS2DObject(div);
+            label.position.copy(pos);
+            return label;
+        }
+        
+        scene.add(createLabel('🚪 Anteroom', new THREE.Vector3(4.0, 2.8, 1.5), '18px', '#7ec8ff'));
+        scene.add(createLabel('🛏️ غرفة العزل', new THREE.Vector3(0.5, 2.8, -1.2), '18px', '#ff9966'));
+        scene.add(createLabel('🚽 حمام', new THREE.Vector3(-1.2, 2.2, 1.8), '14px', '#aaccff'));
+        scene.add(createLabel('💨 VCD', new THREE.Vector3(1.5, 2.5, 1.0), '14px', '#88aadd'));
+        scene.add(createLabel('🛡️ HEPA Filter', new THREE.Vector3(-2.5, 3.0, -2.8), '16px', '#66cc99'));
+        scene.add(createLabel('⬅️ تدفق الهواء', new THREE.Vector3(4.0, 1.2, -2.0), '14px', '#ffffff'));
+        
+        // --- متغيرات التحكم ---
+        let isDoorOpen = false;
+        let isPlanView = false;
+        const doorGroup = doorIso;
+        const initialDoorRot = doorGroup.rotation.y;
+        
+        // عناصر واجهة المستخدم
+        const doorBtn = document.getElementById('door-toggle');
+        const viewBtn = document.getElementById('view-toggle');
+        const warningMsg = document.getElementById('warning-msg');
+        const corrVal = document.getElementById('corr-val');
+        const anteVal = document.getElementById('ante-val');
+        const isoVal = document.getElementById('iso-val');
+        const corrGauge = document.getElementById('corr-gauge');
+        const anteGauge = document.getElementById('ante-gauge');
+        const isoGauge = document.getElementById('iso-gauge');
+        
+        // تحديث قراءات الضغط
+        function updatePressureDisplay() {
+            if (isDoorOpen) {
+                corrVal.textContent = '0.000'; anteVal.textContent = '0.000'; isoVal.textContent = '0.000';
+                corrGauge.style.width = '0%'; anteGauge.style.width = '0%'; isoGauge.style.width = '0%';
+                warningMsg.style.opacity = '1';
+                // إيقاف تدفق الجسيمات تحت الباب
+                doorFlow.visible = false;
+            } else {
+                corrVal.textContent = '0.000'; anteVal.textContent = '-0.010'; isoVal.textContent = '-0.045';
+                corrGauge.style.width = '0%'; anteGauge.style.width = '30%'; isoGauge.style.width = '100%';
+                warningMsg.style.opacity = '0';
+                doorFlow.visible = true;
+            }
+        }
+        
+        doorBtn.addEventListener('click', () => {
+            isDoorOpen = !isDoorOpen;
+            doorBtn.textContent = isDoorOpen ? '🚪 إغلاق باب العزل' : '🚪 فتح باب العزل';
+            doorGroup.rotation.y = isDoorOpen ? initialDoorRot + 1.2 : initialDoorRot;
+            updatePressureDisplay();
+        });
+        
+        viewBtn.addEventListener('click', () => {
+            isPlanView = !isPlanView;
+            if (isPlanView) {
+                camera.position.set(2.5, 12, 0.1);
+                controls.target.set(2.5, 1.5, 0);
+                viewBtn.textContent = '🏞️ عرض ثلاثي الأبعاد';
+            } else {
+                camera.position.set(12, 8, 18);
+                controls.target.set(2, 1.8, 0);
+                viewBtn.textContent = '🔁 عرض مخطط (S-S)';
+            }
+            controls.update();
+        });
+        
+        // حركة الجسيمات (تدفق)
+        function animateParticles(time) {
+            particleGroup.children.forEach(points => {
+                const geo = points.geometry;
+                const pos = geo.attributes.position.array;
+                const count = pos.length / 3;
+                const speed = 0.005;
+                for (let i = 0; i < count; i++) {
+                    // بسيط: تحريك على طول المسار عن طريق إعادة تعيين
+                    // لكن سنستخدم تأثير تدفق بسيط مع الوقت
+                }
+                // فقط نجعلها تومض
+                points.material.size = 0.08 + Math.sin(time * 5 + points.userData.offset) * 0.02;
+            });
+        }
+        
+        // حلقة التصيير
+        function animate(time) {
+            requestAnimationFrame(animate);
+            
+            controls.update();
+            animateParticles(time);
+            
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        requestAnimationFrame(animate);
+        updatePressureDisplay();
+        
+        // --- تجاوب النافذة ---
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // إضافة سرير ومريض بسيط لتحسين الواقعية
+        const bedMat = new THREE.MeshStandardMaterial({ color: 0xddccbb });
+        const bedBase = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 1.0), bedMat);
+        bedBase.position.set(1.2, 0.4, -1.0);
+        bedBase.castShadow = true; bedBase.receiveShadow = true;
+        scene.add(bedBase);
+        const pillow = new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        pillow.position.set(1.8, 0.7, -1.0);
+        pillow.castShadow = true;
+        scene.add(pillow);
+        
+        console.log('✅ محاكاة غرفة العزل AII جاهزة');
+    </script>
+</body>
+</html>
