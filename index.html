@@ -2,510 +2,425 @@
 <html lang="ar" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AII Room · Nurse Entry Simulation · Premium 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AII Room - Pro Simulation</title>
     <style>
         :root {
             --primary: #00d2ff;
             --danger: #ff4b4b;
             --warning: #ffcc00;
             --success: #00e676;
-            --positive: #00b894;
-            --bg-glass: rgba(8, 12, 20, 0.75);
+            --bg-glass: rgba(10, 15, 25, 0.7);
         }
-        body { margin: 0; overflow: hidden; font-family: 'Inter', 'Segoe UI', sans-serif; background-color: #03050a; color: #fff; }
+        body { 
+            margin: 0; overflow: hidden; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background-color: #050505; 
+            color: #fff;
+        }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        
+        /* Modern UI Overlay */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         
-        /* --- Premium Glass Panels --- */
+        /* High-End Dashboard */
         .dashboard { 
-            position: absolute; top: 30px; right: 30px; background: var(--bg-glass); 
-            border: 1px solid rgba(0, 210, 255, 0.25); padding: 22px 25px; border-radius: 24px; 
-            width: 360px; pointer-events: auto; backdrop-filter: blur(16px); 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,210,255,0.1);
-            transition: all 0.3s ease;
+            position: absolute; top: 30px; right: 30px; 
+            background: var(--bg-glass); 
+            border: 1px solid rgba(0, 210, 255, 0.3); 
+            padding: 25px; border-radius: 16px; width: 340px; 
+            pointer-events: auto; backdrop-filter: blur(12px); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(0, 210, 255, 0.1); 
         }
-        .dashboard h2 { margin: 0 0 18px 0; font-size: 18px; font-weight: 600; color: var(--primary); letter-spacing: 2px; border-bottom: 1px solid rgba(0,210,255,0.2); padding-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-        .data-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
-        .val-neutral { color: var(--success); text-shadow: 0 0 8px rgba(0,230,118,0.4); }
-        .val-warning { color: var(--warning); text-shadow: 0 0 8px rgba(255,204,0,0.4); }
-        .val-danger { color: var(--danger); text-shadow: 0 0 8px rgba(255,75,75,0.4); }
-        .val-positive { color: var(--positive); text-shadow: 0 0 8px rgba(0,184,148,0.4); }
-        
-        .positive-panel {
-            position: absolute; top: 30px; left: 30px; background: var(--bg-glass); 
-            border: 1px solid rgba(0, 230, 118, 0.3); padding: 20px; border-radius: 20px; 
-            width: 240px; backdrop-filter: blur(16px); pointer-events: auto;
+        .dashboard h2 { 
+            margin: 0 0 20px 0; font-size: 18px; color: var(--primary); 
+            text-transform: uppercase; letter-spacing: 2px; 
+            border-bottom: 2px solid rgba(0, 210, 255, 0.2); padding-bottom: 10px; 
         }
-        .positive-panel h3 { color: var(--positive); margin: 0 0 15px 0; font-size: 16px; }
+        .data-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 12px; font-size: 14px; letter-spacing: 0.5px;
+        }
+        .data-row span:last-child { font-family: monospace; font-size: 15px; font-weight: 600; }
         
-        .controls { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; pointer-events: auto; }
+        .val-neutral { color: var(--success); text-shadow: 0 0 8px rgba(0, 230, 118, 0.4); }
+        .val-warning { color: var(--warning); text-shadow: 0 0 8px rgba(255, 204, 0, 0.4); }
+        .val-danger { color: var(--danger); text-shadow: 0 0 8px rgba(255, 75, 75, 0.4); }
+        
+        /* Premium Controls */
+        .controls { 
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); 
+            display: flex; gap: 20px; pointer-events: auto; 
+        }
         button { 
-            background: rgba(0, 210, 255, 0.08); border: 1.5px solid var(--primary); color: var(--primary); 
-            padding: 14px 28px; font-size: 14px; border-radius: 50px; cursor: pointer; transition: 0.25s; 
-            font-weight: 600; letter-spacing: 1px; backdrop-filter: blur(5px); text-transform: uppercase;
+            background: rgba(0, 210, 255, 0.1); border: 1px solid var(--primary); 
+            color: var(--primary); padding: 14px 28px; font-size: 13px; 
+            border-radius: 8px; cursor: pointer; transition: all 0.3s ease; 
+            font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; 
+            backdrop-filter: blur(5px);
         }
-        button:hover { background: var(--primary); color: #000; box-shadow: 0 0 25px var(--primary); transform: scale(1.03); }
-        button.btn-warning { border-color: var(--warning); color: var(--warning); }
-        button.btn-warning:hover { background: var(--warning); color: #000; box-shadow: 0 0 25px var(--warning); }
-        button.btn-success { border-color: var(--success); color: var(--success); }
-        button.btn-success:hover { background: var(--success); color: #000; }
-        
+        button:hover { 
+            background: var(--primary); color: #000; 
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.5); 
+        }
+        button.btn-danger { border-color: var(--danger); color: var(--danger); background: rgba(255, 75, 75, 0.1); }
+        button.btn-danger:hover { background: var(--danger); color: #fff; box-shadow: 0 0 20px rgba(255, 75, 75, 0.5); }
+
+        /* Cinematic Warning Banner */
         #warning-banner { 
-            position: absolute; top: 120px; left: 50%; transform: translateX(-50%); 
-            background: rgba(200, 20, 20, 0.9); color: white; padding: 16px 40px; 
-            font-weight: bold; border-radius: 60px; display: none; backdrop-filter: blur(8px); 
-            border: 1px solid #ff8888; box-shadow: 0 0 50px rgba(255,0,0,0.7); 
-            font-size: 18px; letter-spacing: 3px; z-index: 20; animation: pulseWarning 1.2s infinite;
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%); 
+            background: rgba(255, 0, 0, 0.8); color: white; padding: 15px 40px; 
+            font-size: 16px; font-weight: bold; border-radius: 8px; display: none; 
+            box-shadow: 0 0 30px rgba(255,0,0,0.6); border: 1px solid #ff4b4b; 
+            pointer-events: auto; backdrop-filter: blur(10px); letter-spacing: 2px;
+            text-transform: uppercase; animation: pulse 1.5s infinite;
         }
-        @keyframes pulseWarning { 0% { opacity: 0.9; } 50% { opacity: 1; box-shadow: 0 0 70px red; } 100% { opacity: 0.9; } }
-        
-        #nurse-progress {
-            position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); 
-            width: 400px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; 
-            display: none; pointer-events: none;
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px rgba(255,0,0,0.4); }
+            50% { box-shadow: 0 0 40px rgba(255,0,0,0.8); }
+            100% { box-shadow: 0 0 20px rgba(255,0,0,0.4); }
         }
-        #nurse-progress-bar { height: 100%; width: 0%; background: var(--primary); border-radius: 10px; transition: width 0.1s; }
-        
-        .floating-label { position: absolute; background: rgba(0,0,0,0.6); border-left: 4px solid var(--primary); color: white; padding: 6px 16px; border-radius: 30px; font-size: 12px; font-weight: 500; backdrop-filter: blur(4px); pointer-events: none; transform: translate(-50%, -50%); white-space: nowrap; }
+
+        /* 3D Holographic Labels */
+        .floating-label { 
+            position: absolute; background: rgba(0, 20, 40, 0.8); 
+            border: 1px solid rgba(0, 210, 255, 0.4); color: #fff; 
+            padding: 6px 12px; font-size: 11px; border-radius: 6px; 
+            pointer-events: none; transform: translate(-50%, -50%); 
+            transition: opacity 0.3s; white-space: nowrap; 
+            backdrop-filter: blur(4px); letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .floating-label::after {
+            content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            border-width: 5px 5px 0; border-style: solid; 
+            border-color: rgba(0, 210, 255, 0.4) transparent transparent transparent;
+        }
     </style>
-    <!-- Import Maps & Libraries -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
-            }
-        }
-    </script>
 </head>
 <body>
+
     <div id="canvas-container"></div>
+
     <div id="ui-layer">
-        <div id="warning-banner">⚠️ NEGATIVE PRESSURE LOST · ISOLATION BREACH ⚠️</div>
-        <div id="nurse-progress"><div id="nurse-progress-bar"></div></div>
-
-        <!-- Positive Environment Panel (Left) -->
-        <div class="positive-panel">
-            <h3>🛡️ Protective Environment (+)</h3>
-            <div class="data-row"><span>Room Pressure:</span> <span id="pos-press" class="val-positive">+0.03" WC</span></div>
-            <div class="data-row"><span>Airflow:</span> <span>HEPA Supply</span></div>
-            <div class="data-row"><span>Status:</span> <span style="color:#00b894;">Clean Zone</span></div>
-        </div>
-
-        <!-- Main Telemetry Dashboard (Right) -->
+        <div id="warning-banner">⚠️ Warning: Negative Pressure Compromised</div>
+        
         <div class="dashboard">
-            <h2><span>🔬 AII TELEMETRY</span> <span style="font-size:12px; margin-left:auto;">ISO-NEG</span></h2>
-            <div class="data-row"><span>System Status:</span> <span id="status-val" class="val-neutral">SEALED (12 ACH)</span></div>
-            <div class="data-row"><span>Corridor Pressure:</span> <span>0.00" WC</span></div>
-            <div class="data-row"><span>Anteroom:</span> <span id="ante-press" class="val-warning">-0.01" WC</span></div>
-            <div class="data-row"><span>Isolation Room:</span> <span id="iso-press" class="val-danger">-0.03" WC</span></div>
-            <hr style="border-color:rgba(255,255,255,0.1); margin:16px 0;">
-            <div class="data-row"><span>Supply Air:</span> <span>340 CFM</span></div>
-            <div class="data-row"><span>Main Extract:</span> <span>440 CFM</span></div>
+            <h2>System Telemetry</h2>
+            <div class="data-row"><span>Room Status:</span> <span id="status-val" class="val-neutral">SEALED (12 ACH)</span></div>
+            <div class="data-row"><span>Corridor Pressure:</span> <span style="color: #aaa;">0.00" WC</span></div>
+            <div class="data-row"><span>Anteroom Pressure:</span> <span id="ante-press" class="val-warning">-0.01" WC</span></div>
+            <div class="data-row"><span>Isolation Pressure:</span> <span id="iso-press" class="val-danger">-0.03" WC</span></div>
+            <hr style="border: 0; border-top: 1px solid rgba(0, 210, 255, 0.2); margin: 15px 0;">
+            <div class="data-row"><span>Supply Air (Ceiling):</span> <span>340 CFM</span></div>
+            <div class="data-row"><span>Main Extract (Wall):</span> <span>440 CFM</span></div>
             <div class="data-row"><span>Bathroom Exhaust:</span> <span>50 CFM</span></div>
-            <div class="data-row" style="margin-top:10px;"><span style="color:var(--primary);">➜ Total Exhaust (HEPA):</span> <span>490 CFM</span></div>
+            <div class="data-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1);">
+                <span style="color: var(--primary);">Total Exhaust (HEPA):</span> 
+                <span style="color: var(--primary);">490 CFM</span>
+            </div>
         </div>
 
         <div class="controls">
-            <button id="btn-camera">🗺️ Plan View</button>
-            <button id="btn-door" class="btn-warning">🚪 Toggle Iso Door</button>
-            <button id="btn-nurse" class="btn-success">👩‍⚕️ Nurse Enters Room</button>
+            <button id="btn-camera">Switch to Plan View</button>
+            <button id="btn-door" class="btn-danger">Open Isolation Door</button>
         </div>
 
-        <!-- Floating Labels (position updated via JS) -->
-        <div id="label-corridor" class="floating-label">Corridor (0.0")</div>
-        <div id="label-anteroom" class="floating-label">Anteroom (-0.01")</div>
-        <div id="label-iso" class="floating-label">Negative Isolation (-0.03")</div>
-        <div id="label-positive" class="floating-label">Positive Isolation (+0.03")</div>
-        <div id="label-hepa" class="floating-label">HEPA Filter Unit</div>
-        <div id="label-nurse" class="floating-label" style="background:#00d2ff; color:#000; border-left-color:#fff;">👩‍⚕️ Nurse</div>
+        <div id="label-corridor" class="floating-label">Normal Pressure Corridor</div>
+        <div id="label-anteroom" class="floating-label">Buffer Anteroom</div>
+        <div id="label-iso" class="floating-label">Negative Pressure Iso</div>
+        <div id="label-bath" class="floating-label">Bathroom Exhaust</div>
+        <div id="label-hepa" class="floating-label">HEPA Filtration Unit</div>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-        import * as TWEEN from 'https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 
-        // --- Setup Scene ---
+    <script>
+        // --- 1. CORE SETUP ---
+        const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050a14);
-        scene.fog = new THREE.FogExp2(0x050a14, 0.012);
-        
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(18, 22, 24);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        scene.fog = new THREE.FogExp2(0x050505, 0.015); // Add depth
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(22, 28, 22);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Sharpness
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.3;
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinematic colors
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
 
-        // CSS2 Renderer for labels
-        const labelRenderer = new CSS2DRenderer();
-        labelRenderer.setSize(window.innerWidth, window.innerHeight);
-        labelRenderer.domElement.style.position = 'absolute';
-        labelRenderer.domElement.style.top = '0';
-        labelRenderer.domElement.style.left = '0';
-        labelRenderer.domElement.style.pointerEvents = 'none';
-        document.body.appendChild(labelRenderer.domElement);
-
-        // Controls
-        const controls = new OrbitControls(camera, renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(-2, 2, 0);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.autoRotate = false;
-        controls.target.set(0, 2, 0);
         controls.maxPolarAngle = Math.PI / 2.2;
 
-        // --- Lighting ---
-        scene.add(new THREE.AmbientLight(0x404c66, 0.4));
-        const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
-        sunLight.position.set(10, 20, 5);
-        sunLight.castShadow = true;
-        sunLight.receiveShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
-        const d = 20;
-        sunLight.shadow.camera.left = -d;
-        sunLight.shadow.camera.right = d;
-        sunLight.shadow.camera.top = d;
-        sunLight.shadow.camera.bottom = -d;
-        sunLight.shadow.camera.near = 1;
-        sunLight.shadow.camera.far = 40;
-        sunLight.shadow.bias = -0.0005;
-        scene.add(sunLight);
-        
-        const fillLight1 = new THREE.PointLight(0x446688, 0.8); fillLight1.position.set(-2, 6, 8); scene.add(fillLight1);
-        const fillLight2 = new THREE.PointLight(0x88aacc, 0.6); fillLight2.position.set(8, 5, -6); scene.add(fillLight2);
-        
-        // Ceiling Lights
-        const ceilingLights = [
-            { pos: [-6, 4.8, 0], col: 0xe6f2ff, int: 1.5 },
-            { pos: [2, 4.8, 0], col: 0xffffff, int: 1.2 },
-            { pos: [10, 4.8, 0], col: 0xffffff, int: 1.0 },
-            { pos: [14, 4.8, 3], col: 0xd4f0ff, int: 1.0 } // positive room
-        ];
-        ceilingLights.forEach(l => {
-            const light = new THREE.PointLight(l.col, l.int, 25);
-            light.position.set(l.pos[0], l.pos[1], l.pos[2]);
+        // --- 2. ADVANCED LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.4);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
+
+        // Main Room Lights
+        function createRoomLight(x, y, z, color, intensity) {
+            const light = new THREE.PointLight(color, intensity, 20);
+            light.position.set(x, y, z);
             light.castShadow = true;
+            light.shadow.bias = -0.001;
             scene.add(light);
+            return light;
+        }
+        createRoomLight(-6, 4.8, 0, 0xe6f2ff, 1.5); // Iso Room
+        createRoomLight(0.5, 4.8, 0, 0xffffff, 1);  // Anteroom
+        createRoomLight(9, 4.8, 0, 0xffffff, 0.8);  // Corridor
+
+        // --- 3. HIGH-END MATERIALS ---
+        // Glass walls (Architectural look)
+        const wallMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x88bbdd, transmission: 0.9, opacity: 1, transparent: true,
+            roughness: 0.2, metalness: 0.1, ior: 1.5, thickness: 0.5,
+            side: THREE.DoubleSide
+        });
+        
+        // Floor with slight reflection
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: 0x1a202c, roughness: 0.4, metalness: 0.1 
         });
 
-        // --- Materials ---
-        const wallMat = new THREE.MeshPhysicalMaterial({ color: 0xaaccdd, transparent: true, opacity: 0.3, roughness: 0.3, metalness: 0.1, side: THREE.DoubleSide });
-        const solidMat = new THREE.MeshStandardMaterial({ color: 0x7c8fa0, roughness: 0.5 });
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e2a3a, roughness: 0.4, metalness: 0.2 });
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x8b6b4d, roughness: 0.6 });
-        const glassMat = new THREE.MeshStandardMaterial({ color: 0xcce5ff, transparent: true, opacity: 0.5, emissive: new THREE.Color(0x112233) });
-
-        // --- Build Architecture ---
+        // --- 4. ARCHITECTURE ---
         const archGroup = new THREE.Group();
         scene.add(archGroup);
-        
-        // Floor
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(36, 0.2, 20), floorMat);
+
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(32, 0.2, 18), floorMat);
         floor.position.y = -0.1;
         floor.receiveShadow = true;
         archGroup.add(floor);
-        
-        // Grid Helper
-        const grid = new THREE.GridHelper(36, 20, 0x88aacc, 0x334455);
-        grid.position.y = 0.01;
-        archGroup.add(grid);
 
-        function addWall(w, h, d, x, y, z, ry=0, mat=wallMat) {
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-            mesh.position.set(x, y+h/2, z);
-            mesh.rotation.y = ry;
-            mesh.castShadow = true; mesh.receiveShadow = true;
-            archGroup.add(mesh);
-            return mesh;
+        function createWall(w, h, d, x, y, z) {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+            wall.position.set(x, y, z);
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            archGroup.add(wall);
+            return wall;
         }
-        
-        // Outer walls
-        addWall(36, 5, 0.2, 0, 0, -10, 0); // front
-        addWall(36, 5, 0.2, 0, 0, 10, 0);  // back
-        addWall(0.2, 5, 20, -18, 0, 0, 0); // left
-        addWall(0.2, 5, 20, 18, 0, 0, 0);  // right
-        
-        // Internal partitions (right to left)
-        // Corridor / Anteroom
-        addWall(0.2, 5, 8, 8, 0, -1, 0, solidMat);
-        addWall(0.2, 5, 8, 8, 0, 1, 0, solidMat);
-        // Anteroom / Iso
-        addWall(0.2, 5, 8, 2, 0, -1, 0, solidMat);
-        addWall(0.2, 5, 8, 2, 0, 1, 0, solidMat);
-        // Iso / Positive room (new)
-        addWall(0.2, 5, 8, -6, 0, -1, 0, solidMat);
-        addWall(0.2, 5, 8, -6, 0, 1, 0, solidMat);
-        
-        // Bathroom inside Iso
-        addWall(4, 5, 0.2, -14, 0, -4, 0);
-        addWall(0.2, 5, 4, -12, 0, -6, 0);
-        
-        // Ceiling
-        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(36, 0.1, 20), new THREE.MeshStandardMaterial({ color: 0xd0d8e8, roughness: 0.7 }));
-        ceiling.position.y = 5.0;
-        ceiling.receiveShadow = true;
-        archGroup.add(ceiling);
 
-        // Surface mounted lights
-        const lightPanel = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.5), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: new THREE.Color(0xccddff) }));
-        lightPanel.position.set(-4, 4.96, 2); archGroup.add(lightPanel);
-        lightPanel.clone().position.set(0, 4.96, -2); archGroup.add(lightPanel);
-        lightPanel.clone().position.set(10, 4.96, 2); archGroup.add(lightPanel);
+        // Walls
+        createWall(30, 5, 0.2, 0, 2.5, -6); // Back
+        createWall(30, 5, 0.2, 0, 2.5, 6);  // Front
+        createWall(0.2, 5, 12, -15, 2.5, 0); // Far Left
+        createWall(0.2, 5, 12, 15, 2.5, 0); // Far Right
+        createWall(0.2, 5, 5, 3, 2.5, -3.5); // Corridor to Anteroom (Top)
+        createWall(0.2, 5, 5, 3, 2.5, 3.5);  // Corridor to Anteroom (Bottom)
+        createWall(0.2, 5, 5, -2, 2.5, -3.5); // Anteroom to Iso (Top)
+        createWall(0.2, 5, 5, -2, 2.5, 3.5);  // Anteroom to Iso (Bottom)
 
-        // Doors
-        function createDoor(x, z, rotY) {
+        // Bathroom
+        createWall(4, 5, 0.2, -13, 2.5, -2);
+        createWall(0.2, 5, 4, -11, 2.5, -4);
+
+        // Patient Bed (Simple abstraction)
+        const bedBase = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 4), new THREE.MeshStandardMaterial({color: 0xdddddd}));
+        bedBase.position.set(-8, 0.4, 3);
+        bedBase.castShadow = true;
+        archGroup.add(bedBase);
+        const bedMattress = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.3, 3.8), new THREE.MeshStandardMaterial({color: 0x00d2ff}));
+        bedMattress.position.set(-8, 0.95, 3);
+        archGroup.add(bedMattress);
+
+        // --- 5. DOORS & GASKETS ---
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.5, roughness: 0.3 });
+        const windowMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.95, opacity: 1, transparent: true, roughness: 0.1 });
+
+        function createDoor(x, y, z, rotGroupX, rotGroupZ) {
             const pivot = new THREE.Group();
-            pivot.position.set(x, 0, z);
-            const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(1.2, 4.0, 0.1), doorMat);
-            doorLeaf.position.set(0, 2.0, 0);
-            doorLeaf.castShadow = true;
-            const window = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.12), glassMat);
-            window.position.set(0, 2.5, 0.06);
-            doorLeaf.add(window);
-            pivot.add(doorLeaf);
+            pivot.position.set(rotGroupX, y, rotGroupZ);
+            const door = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3.8, 2), doorMat);
+            door.position.set(0, 2.1, 1); // Undercut gap
+            door.castShadow = true;
+            
+            // Vision Panel
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 0.8), windowMat);
+            panel.position.set(0, 2.5, 1);
+            door.add(panel);
+            
+            pivot.add(door);
             archGroup.add(pivot);
             return pivot;
         }
-        const doorCorr = createDoor(8, -1.5, 0);
-        const doorIso = createDoor(2, -1.5, 0);
-        const doorPositive = createDoor(-6, -1.5, 0);
-        
-        // HEPA & Ducts
-        const hepa = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.0, 1.8), new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.4, metalness: 0.7 }));
-        hepa.position.set(-16, 3.5, -7);
-        hepa.castShadow = true;
-        archGroup.add(hepa);
-        const duct = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 3), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
-        duct.position.set(-15, 4.2, -6);
-        duct.rotation.z = 0.2;
-        duct.castShadow = true;
-        archGroup.add(duct);
-        
-        // Patient Bed
-        const bed = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 4.5), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
-        bed.position.set(-10, 0.2, 3);
-        bed.castShadow = true; bed.receiveShadow = true;
-        archGroup.add(bed);
-        const mattress = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 4.2), new THREE.MeshStandardMaterial({ color: 0x00a8ff }));
-        mattress.position.set(-10, 0.55, 3);
-        archGroup.add(mattress);
-        
-        // --- Nurse Model (Simple) ---
-        const nurseGroup = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.8), new THREE.MeshStandardMaterial({ color: 0x4aa3df }));
-        body.position.y = 0.9;
-        body.castShadow = true;
-        nurseGroup.add(body);
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({ color: 0xffddbb }));
-        head.position.y = 1.9;
-        head.castShadow = true;
-        nurseGroup.add(head);
-        const mask = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.1), new THREE.MeshStandardMaterial({ color: 0x88ccff }));
-        mask.position.set(0, 1.85, 0.35);
-        nurseGroup.add(mask);
-        nurseGroup.position.set(12, 0, -1.5); // Start in corridor
-        nurseGroup.rotation.y = Math.PI;
-        archGroup.add(nurseGroup);
 
-        // --- Particle System (Dynamic Airflow) ---
-        const particleGroup = new THREE.Group();
-        scene.add(particleGroup);
+        const doorAnteroom = createDoor(3, 0, -1, 3, -1);
+        const doorIso = createDoor(-2, 0, -1, -2, -1);
+
+        // Equipment
+        const hepaMat = new THREE.MeshStandardMaterial({ color: 0x112233, metalness: 0.8 });
+        const hepaFilter = new THREE.Mesh(new THREE.BoxGeometry(2, 1.5, 1.5), hepaMat);
+        hepaFilter.position.set(-15, 4, -4.5);
+        archGroup.add(hepaFilter);
+
+        // --- 6. ADVANCED AIRFLOW PARTICLES (BEZIER CURVES) ---
         const particles = [];
-        const sphereGeo = new THREE.SphereGeometry(0.08, 6);
-        const matSupply = new THREE.MeshStandardMaterial({ color: 0x33cc99, emissive: 0x116644 });
-        const matExtract = new THREE.MeshStandardMaterial({ color: 0xff8833, emissive: 0x442200 });
-        const matFlow = new THREE.MeshStandardMaterial({ color: 0xeeeeee, emissive: 0x444444 });
+        const particleGeo = new THREE.SphereGeometry(0.06, 8, 8);
         
-        const paths = [
-            { type: 'supply', points: [ [-6,4.5,0], [-6,2.5,1], [-8,2,2], [-14,2,-5] ] },
-            { type: 'flow', points: [ [9,0.2,-1.5], [7,0.3,-1.5], [4,0.4,-1.5], [1,1,-1.5] ] },
-            { type: 'flow', points: [ [3,0.2,-1.5], [1,0.3,-1.5], [-2,0.5,-1.5], [-5,2,-2] ] },
-            { type: 'extract', points: [ [-12,1.5,-4], [-13,2.5,-5], [-15,3.5,-6], [-16,4,-7] ] }
-        ];
-        
-        function spawnParticle(pathIdx) {
-            const path = paths[pathIdx];
-            const mat = path.type === 'supply' ? matSupply : path.type === 'extract' ? matExtract : matFlow;
-            const p = new THREE.Mesh(sphereGeo, mat.clone());
-            particleGroup.add(p);
-            const cp1 = new THREE.Vector3().fromArray(path.points[1]);
-            const cp2 = new THREE.Vector3().fromArray(path.points[2]);
-            const end = new THREE.Vector3().fromArray(path.points[3]);
-            const start = new THREE.Vector3().fromArray(path.points[0]).add(new THREE.Vector3(Math.random()-0.5, Math.random()*0.3, Math.random()-0.5));
-            const curve = new THREE.CubicBezierCurve3(start, cp1, cp2, end);
-            particles.push({ mesh: p, curve, progress: Math.random(), speed: 0.004 + Math.random()*0.003, type: path.type });
-        }
-        for (let i=0; i<70; i++) spawnParticle(i % paths.length);
+        // Emissive materials for holographic look
+        const matSupply = new THREE.MeshStandardMaterial({ color: 0x00d2ff, emissive: 0x00d2ff, emissiveIntensity: 2 });
+        const matExtract = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xffcc00, emissiveIntensity: 2 });
+        const matNeutral = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1 });
 
-        // --- CSS2D Labels (3D) ---
-        function createLabel(text, pos, fontSize='14px') {
-            const div = document.createElement('div');
-            div.textContent = text;
-            div.style.color = '#fff';
-            div.style.fontSize = fontSize;
-            div.style.fontWeight = 'bold';
-            div.style.textShadow = '1px 1px 3px #000';
-            div.style.padding = '6px 14px';
-            div.style.background = 'rgba(20,40,70,0.8)';
-            div.style.borderRadius = '20px';
-            div.style.border = '1px solid #00d2ff';
-            div.style.pointerEvents = 'none';
-            const label = new CSS2DObject(div);
-            label.position.copy(pos);
-            return label;
+        // Define Flow Paths (Start, ControlPoint1, ControlPoint2, End)
+        const paths = [
+            // Supply -> Bed -> Extract
+            { type: 'supply', points: [new THREE.Vector3(-6, 4.5, 0), new THREE.Vector3(-6, 2, 0), new THREE.Vector3(-8, 2, 2), new THREE.Vector3(-14, 2, -4)] },
+            // Under Door Corridor -> Anteroom
+            { type: 'flow', points: [new THREE.Vector3(4, 0.1, 0), new THREE.Vector3(3, 0.1, 0), new THREE.Vector3(2, 0.1, 0), new THREE.Vector3(1, 1, 0)] },
+            // Under Door Anteroom -> Iso
+            { type: 'flow', points: [new THREE.Vector3(0, 0.1, 0), new THREE.Vector3(-1, 0.1, 0), new THREE.Vector3(-2, 0.1, 0), new THREE.Vector3(-4, 2, 0)] },
+            // Bath Extract
+            { type: 'extract', points: [new THREE.Vector3(-12, 1, -3), new THREE.Vector3(-13, 2, -3), new THREE.Vector3(-14, 3, -4), new THREE.Vector3(-15, 4, -4)] }
+        ];
+
+        function spawnParticle(pathData) {
+            const mat = pathData.type === 'supply' ? matSupply : pathData.type === 'extract' ? matExtract : matNeutral;
+            const p = new THREE.Mesh(particleGeo, mat);
+            scene.add(p);
+            
+            const curve = new THREE.CubicBezierCurve3(
+                pathData.points[0].clone().add(new THREE.Vector3(Math.random()-0.5, Math.random()*0.2, Math.random()-0.5)),
+                pathData.points[1],
+                pathData.points[2],
+                pathData.points[3].clone().add(new THREE.Vector3(Math.random()-0.5, Math.random()*0.5, Math.random()-0.5))
+            );
+
+            particles.push({ mesh: p, curve: curve, progress: Math.random(), speed: 0.003 + Math.random() * 0.004, type: pathData.type });
         }
-        scene.add(createLabel('🏥 Corridor', new THREE.Vector3(13, 4.5, 0)));
-        scene.add(createLabel('🚪 Anteroom', new THREE.Vector3(5, 4.5, 0)));
-        scene.add(createLabel('🔴 Negative Iso', new THREE.Vector3(-4, 4.5, 0)));
-        scene.add(createLabel('🟢 Positive Env', new THREE.Vector3(-12, 4.5, 4)));
-        scene.add(createLabel('HEPA', new THREE.Vector3(-16, 5.5, -7), '12px'));
-        
-        // --- State ---
+
+        // Spawn many particles
+        for(let i=0; i<80; i++) {
+            spawnParticle(paths[Math.floor(Math.random() * paths.length)]);
+        }
+
+        // --- 7. INTERACTION & LOGIC ---
         let isIsoDoorOpen = false;
         let isPlanView = false;
-        let nurseEntryActive = false;
-        const warningBanner = document.getElementById('warning-banner');
-        const nurseProgress = document.getElementById('nurse-progress');
-        const progressBar = document.getElementById('nurse-progress-bar');
-        const btnDoor = document.getElementById('btn-door');
-        const btnNurse = document.getElementById('btn-nurse');
-        const btnCamera = document.getElementById('btn-camera');
         
-        // UI Update function
-        function updateUI() {
-            const isoOpen = isIsoDoorOpen || nurseEntryActive;
-            document.getElementById('ante-press').innerText = isoOpen ? '0.00" WC' : '-0.01" WC';
-            document.getElementById('iso-press').innerText = isoOpen ? '0.00" WC' : '-0.03" WC';
-            document.getElementById('status-val').innerText = isoOpen ? 'BREACH' : 'SEALED (12 ACH)';
-            document.getElementById('status-val').className = isoOpen ? 'val-danger' : 'val-neutral';
-            warningBanner.style.display = isoOpen ? 'block' : 'none';
-        }
-
-        // Door Toggle
+        const btnDoor = document.getElementById('btn-door');
+        const btnCamera = document.getElementById('btn-camera');
+        const warningBanner = document.getElementById('warning-banner');
+        
         btnDoor.addEventListener('click', () => {
-            if (nurseEntryActive) return;
             isIsoDoorOpen = !isIsoDoorOpen;
+            
+            // Physics-based door swing
             new TWEEN.Tween(doorIso.rotation)
-                .to({ y: isIsoDoorOpen ? -Math.PI/2 : 0 }, 1000)
-                .easing(TWEEN.Easing.Exponential.InOut)
+                .to({ y: isIsoDoorOpen ? -Math.PI / 2 : 0 }, 1200)
+                .easing(TWEEN.Easing.Bounce.Out)
                 .start();
-            updateUI();
-        });
 
-        // Nurse Entry Sequence
-        btnNurse.addEventListener('click', () => {
-            if (nurseEntryActive) return;
-            nurseEntryActive = true;
-            nurseProgress.style.display = 'block';
-            progressBar.style.width = '0%';
-            
-            // Close door if open first
             if (isIsoDoorOpen) {
-                isIsoDoorOpen = false;
-                new TWEEN.Tween(doorIso.rotation).to({ y: 0 }, 800).start();
-            }
-            
-            // Animate nurse and door
-            const timeline = [
-                { pos: [12,0,-1.5], rot: Math.PI, progress: 0 },      // start corridor
-                { pos: [8,0,-1.5], rot: Math.PI, progress: 20 },     // approach anteroom door
-                { pos: [5,0,-1.5], rot: Math.PI, progress: 40 },     // inside anteroom
-                { pos: [2,0,-1.5], rot: Math.PI, progress: 60 },     // approach iso door
-                { pos: [-2,0,-1.5], rot: Math.PI, progress: 80 },    // inside iso (door opens)
-                { pos: [-6,0,0], rot: Math.PI/2, progress: 100 }     // at bedside
-            ];
-            
-            let step = 0;
-            function nextStep() {
-                if (step >= timeline.length-1) {
-                    nurseEntryActive = false;
-                    nurseProgress.style.display = 'none';
-                    updateUI();
-                    return;
-                }
-                step++;
-                const target = timeline[step];
-                progressBar.style.width = target.progress + '%';
+                btnDoor.innerText = "Close Isolation Door";
+                btnDoor.style.borderColor = "var(--success)";
+                btnDoor.style.color = "var(--success)";
+                btnDoor.style.background = "rgba(0, 230, 118, 0.1)";
                 
-                // Open iso door when nurse reaches it
-                if (step === 4) {
-                    isIsoDoorOpen = true;
-                    new TWEEN.Tween(doorIso.rotation).to({ y: -Math.PI/2 }, 600).start();
-                    updateUI();
-                }
-                if (step === 5) {
-                    // close door behind nurse? (optional) - keep open for effect
-                }
+                warningBanner.style.display = "block";
+                document.getElementById('ante-press').innerText = "0.00\" WC";
+                document.getElementById('ante-press').className = "val-danger";
+                document.getElementById('iso-press').innerText = "0.00\" WC";
+                document.getElementById('iso-press').className = "val-danger";
+                document.getElementById('status-val').innerText = "SYSTEM COMPROMISED";
+                document.getElementById('status-val').className = "val-danger";
+            } else {
+                btnDoor.innerText = "Open Isolation Door";
+                btnDoor.style.borderColor = "var(--danger)";
+                btnDoor.style.color = "var(--danger)";
+                btnDoor.style.background = "rgba(255, 75, 75, 0.1)";
                 
-                new TWEEN.Tween(nurseGroup.position)
-                    .to({ x: target.pos[0], y: target.pos[1], z: target.pos[2] }, 1200)
-                    .easing(TWEEN.Easing.Quadratic.InOut)
-                    .start();
-                new TWEEN.Tween(nurseGroup.rotation)
-                    .to({ y: target.rot }, 1200)
-                    .start()
-                    .onComplete(nextStep);
+                warningBanner.style.display = "none";
+                document.getElementById('ante-press').innerText = "-0.01\" WC";
+                document.getElementById('ante-press').className = "val-warning";
+                document.getElementById('iso-press').innerText = "-0.03\" WC";
+                document.getElementById('iso-press').className = "val-danger";
+                document.getElementById('status-val').innerText = "SEALED (12 ACH)";
+                document.getElementById('status-val').className = "val-neutral";
             }
-            nextStep();
-            updateUI();
         });
 
-        // Camera Toggle
         btnCamera.addEventListener('click', () => {
             isPlanView = !isPlanView;
-            const pos = isPlanView ? new THREE.Vector3(0, 32, 0.1) : new THREE.Vector3(18, 22, 24);
-            new TWEEN.Tween(camera.position).to(pos, 1500).easing(TWEEN.Easing.Cubic.InOut).start();
-            controls.target.set(0, 2, 0);
-            btnCamera.innerText = isPlanView ? '🎥 3D View' : '🗺️ Plan View';
+            const targetPos = isPlanView ? new THREE.Vector3(-2, 35, 0) : new THREE.Vector3(22, 28, 22);
+            
+            new TWEEN.Tween(camera.position).to(targetPos, 2000).easing(TWEEN.Easing.Cubic.InOut).start();
+            btnCamera.innerText = isPlanView ? "Switch to 3D View" : "Switch to Plan View";
         });
 
-        // Animation Loop
-        function animate(time) {
-            requestAnimationFrame(animate);
-            TWEEN.update(time);
-            controls.update();
-            
-            // Update particles (affected by door state)
-            particles.forEach(p => {
-                if ((isIsoDoorOpen || nurseEntryActive) && p.type === 'flow') {
-                    // Turbulence
-                    p.mesh.position.x += (Math.random()-0.5)*0.02;
-                    p.mesh.position.z += (Math.random()-0.5)*0.02;
-                    return;
+        // --- 8. UI LABELS UPDATE ---
+        const labels = [
+            { id: 'label-corridor', pos: new THREE.Vector3(9, 4, 0) },
+            { id: 'label-anteroom', pos: new THREE.Vector3(0.5, 4, 0) },
+            { id: 'label-iso', pos: new THREE.Vector3(-6, 4, -2) },
+            { id: 'label-bath', pos: new THREE.Vector3(-12, 3, -3) },
+            { id: 'label-hepa', pos: new THREE.Vector3(-15, 6, -4.5) }
+        ];
+
+        function updateLabels() {
+            labels.forEach(l => {
+                const el = document.getElementById(l.id);
+                const pos = l.pos.clone();
+                pos.project(camera);
+                
+                const x = (pos.x * .5 + .5) * window.innerWidth;
+                const y = (pos.y * -.5 + .5) * window.innerHeight;
+                
+                if (pos.z > 1) {
+                    el.style.opacity = 0;
+                } else {
+                    el.style.opacity = 1;
+                    el.style.left = `${x}px`;
+                    el.style.top = `${y}px`;
                 }
-                p.progress += p.speed;
-                if (p.progress > 1) p.progress = 0;
-                p.mesh.position.copy(p.curve.getPointAt(p.progress));
             });
-            
-            renderer.render(scene, camera);
-            labelRenderer.render(scene, camera);
         }
-        requestAnimationFrame(animate);
-        
-        // Handle resize
+
+        // --- 9. ANIMATION LOOP ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            labelRenderer.setSize(window.innerWidth, window.innerHeight);
         });
-        
-        updateUI();
-        
-        // Audio Context for subtle beep on breach (optional)
-        // (Omitted for brevity but can be added)
-        
-        console.log('✅ Premium AII Simulation with Nurse Entry - Ready');
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            controls.update();
+            updateLabels();
+
+            particles.forEach(p => {
+                // Chaos mode if door opens (lose directionality)
+                if (isIsoDoorOpen && p.type === 'flow') {
+                    p.mesh.position.y += Math.sin(time * 0.005) * 0.02;
+                    return; 
+                }
+
+                p.progress += p.speed;
+                if (p.progress >= 1) p.progress = 0;
+                
+                const pos = p.curve.getPointAt(p.progress);
+                p.mesh.position.copy(pos);
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate(0);
     </script>
 </body>
 </html>
